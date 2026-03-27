@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { X, Zap, Smartphone, CreditCard, Banknote, Loader2, CheckCircle, Edit } from 'lucide-react';
+import { X, Truck, Smartphone, CreditCard, Banknote, Loader2, CheckCircle, Edit } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { usePublicWorker } from '@/hooks/usePublicWorker';
@@ -172,7 +172,6 @@ const BookingView: React.FC = () => {
           ) : (
             <div className="space-y-8">
               <div className="p-10 bg-gray-900 rounded-[3rem] text-center text-white shadow-2xl relative overflow-hidden">
-                <Zap className="absolute top-0 right-0 w-40 h-40 text-white/5 -translate-y-10 translate-x-10" />
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Booking Deposit</p>
                 <p className="text-5xl font-black tracking-tighter">₵20.00</p>
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-6">Secure Your Slot • Refundable</p>
@@ -230,7 +229,7 @@ const BookingView: React.FC = () => {
                   ) : (
                     <>
                       Pay & Dispatch
-                      <Zap className="w-6 h-6 fill-white" />
+                      <Truck className="w-6 h-6 fill-white" />
                     </>
                   )}
                 </button>

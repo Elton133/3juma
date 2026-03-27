@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Zap, Navigation, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { ChevronLeft, Truck, Hammer, Navigation, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import type { ServiceRequest } from '@/types/payment';
 import ReviewModal from '@/components/ReviewModal';
@@ -44,10 +44,10 @@ const TrackingView: React.FC = () => {
 
   const steps = [
     { id: 'pending', label: 'Requested', icon: Clock },
-    { id: 'accepted', label: 'Dispatched', icon: Zap },
+    { id: 'accepted', label: 'Dispatched', icon: Truck },
     { id: 'en_route', label: 'En Route', icon: Navigation },
     { id: 'arrived', label: 'Arrived', icon: CheckCircle },
-    { id: 'in_progress', label: 'Working', icon: Zap },
+    { id: 'in_progress', label: 'Working', icon: Hammer },
     { id: 'completed', label: 'Finished', icon: CheckCircle },
   ];
 
@@ -103,7 +103,7 @@ const TrackingView: React.FC = () => {
             {request?.status === 'completed' ? (
               <CheckCircle className="w-10 h-10 text-emerald-500" />
             ) : (
-              <Zap className="w-10 h-10 text-emerald-500 animate-pulse" />
+              <Truck className="w-10 h-10 text-emerald-500 animate-pulse" />
             )}
           </div>
           

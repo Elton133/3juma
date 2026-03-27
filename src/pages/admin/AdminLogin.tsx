@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const AdminLogin: React.FC = () => {
@@ -25,9 +25,7 @@ const AdminLogin: React.FC = () => {
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4">
       <div className="glass rounded-[3rem] p-12 max-w-md w-full shadow-2xl border-white/40">
         <div className="text-center mb-10">
-          <div className="w-16 h-16 bg-gray-900 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl">
-            <Zap className="w-8 h-8 text-white" />
-          </div>
+          <img src="/logo.png" alt="3juma Logo" className="h-16 w-auto mx-auto mb-6 object-contain" />
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Dispatch Center</h1>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Admin access only</p>
         </div>

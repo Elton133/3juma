@@ -36,7 +36,7 @@ const MapView: React.FC = () => {
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row bg-[#fafafa] overflow-hidden">
       {/* Sidebar — capped to ensure map visibility on mobile */}
-      <div className="w-full max-h-[35vh] md:max-h-none md:w-96 bg-white/90 backdrop-blur-xl border-b md:border-b-0 md:border-r border-gray-100 flex flex-col overflow-hidden relative z-20 shadow-xl">
+      <div className="w-full max-h-[50vh] md:max-h-none md:w-96 bg-white/90 backdrop-blur-xl border-b md:border-b-0 md:border-r border-gray-100 flex flex-col overflow-hidden relative z-20 shadow-xl">
         <div className="p-3 md:p-8 border-b border-gray-100">
           <button onClick={() => navigate('/')} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-900 flex items-center gap-2 mb-2 md:mb-8 group transition-colors">
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Modify Search

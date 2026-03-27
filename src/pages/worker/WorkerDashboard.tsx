@@ -11,7 +11,7 @@ import type { ServiceRequest } from '@/types/payment';
 
 const WorkerDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { requests, fetchRequests, updateStatus } = useServiceRequests(user?.id);
+  const { requests, fetchRequests, updateStatus, error } = useServiceRequests(user?.id);
   const { stats } = useWorkerStats(user?.id);
   
   const [activeTab, setActiveTab] = useState<'incoming' | 'active' | 'history' | 'earnings' | 'profile'>('incoming');
@@ -42,6 +42,13 @@ const WorkerDashboard: React.FC = () => {
     }, 2000);
   };
 
+  const handleStatusUpdate = async (requestId: string, status: ServiceRequest['status']) => {
+    const result = await updateStatus(requestId, status);
+    if (result) {
+      fetchRequests('worker');
+    }
+  };
+
   const incomingJobs = requests.filter((j: ServiceRequest) => j.status === 'pending');
   const activeJobs = requests.filter((j: ServiceRequest) => ['accepted', 'confirmed', 'en_route', 'in_progress', 'arrived'].includes(j.status));
   const completedJobs = requests.filter((j: ServiceRequest) => j.status === 'completed');
@@ -57,6 +64,12 @@ const WorkerDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#fafafa] py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-100 rounded-2xl text-[10px] font-bold text-red-500 uppercase tracking-wider">
+            {error}
+          </div>
+        )}
+        
         {/* Profile Header */}
         <div className="glass rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 border-white/40 shadow-lg">
           <div className="flex items-center gap-6">
@@ -122,13 +135,13 @@ const WorkerDashboard: React.FC = () => {
               </div>
               <div className="flex gap-2">
                 <button 
-                  onClick={() => updateStatus(job.id, 'cancelled')}
+                  onClick={() => handleStatusUpdate(job.id, 'cancelled')}
                   className="px-6 py-3 border-2 border-gray-200 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-red-500 hover:text-red-500 transition-colors"
                 >
                   Decline
                 </button>
                 <button 
-                  onClick={() => updateStatus(job.id, 'accepted')}
+                  onClick={() => handleStatusUpdate(job.id, 'accepted')}
                   className="px-6 py-3 bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-emerald-600 transition-colors"
                 >
                   Accept
@@ -151,16 +164,16 @@ const WorkerDashboard: React.FC = () => {
               </div>
               <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
                 {job.status === 'accepted' && (
-                  <button onClick={() => updateStatus(job.id, 'en_route')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Start Trip</button>
+                  <button onClick={() => handleStatusUpdate(job.id, 'en_route')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Start Trip</button>
                 )}
                 {job.status === 'en_route' && (
-                  <button onClick={() => updateStatus(job.id, 'arrived')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Mark Arrived</button>
+                  <button onClick={() => handleStatusUpdate(job.id, 'arrived')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Mark Arrived</button>
                 )}
                 {job.status === 'arrived' && (
-                  <button onClick={() => updateStatus(job.id, 'in_progress')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Start Work</button>
+                  <button onClick={() => handleStatusUpdate(job.id, 'in_progress')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Start Work</button>
                 )}
                 {job.status === 'in_progress' && (
-                  <button onClick={() => updateStatus(job.id, 'completed')} className="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Mark Completed</button>
+                  <button onClick={() => handleStatusUpdate(job.id, 'completed')} className="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Mark Completed</button>
                 )}
               </div>
             </div>

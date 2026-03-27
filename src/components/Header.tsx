@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Zap, Menu, X, LogOut } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 const NAV_ITEMS = [
@@ -17,11 +17,8 @@ const Header: React.FC = () => {
   return (
     <header className="glass-header sticky top-0 z-50 border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 group transform active:scale-95 transition-all">
-          <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
-            <Zap className="w-6 h-6 text-white" />
-          </div>
-          <span className="font-black text-xl text-gray-900 tracking-tighter">3juma</span>
+        <Link to="/" className="flex items-center group transform active:scale-95 transition-all">
+          <img src="/3juma.png" alt="3juma Logo" className="h-10 w-auto object-contain" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">

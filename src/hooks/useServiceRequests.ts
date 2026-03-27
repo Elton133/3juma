@@ -151,13 +151,15 @@ export function useServiceRequests(userId?: string) {
       if (status === 'completed') updates.completed_at = new Date().toISOString();
       if (status === 'cancelled') updates.cancelled_at = new Date().toISOString();
 
-      const { error: err } = await supabase
+      const { data, error: err } = await supabase
         .from('service_requests')
         .update(updates)
-        .eq('id', requestId);
+        .eq('id', requestId)
+        .select()
+        .single();
 
       if (err) throw err;
-      return true;
+      return data as ServiceRequest;
     } catch (err: any) {
       setError(err.message);
       return false;
