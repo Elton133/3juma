@@ -19,6 +19,9 @@ export interface ServiceRequest {
   payment_status: 'pending' | 'awaiting_deposit' | 'paid';
   created_at: string;
   updated_at: string;
+  // Guest data
+  guest_name?: string | null;
+  guest_phone?: string | null;
   // Joined data
   customer_name?: string;
   customer_phone?: string;

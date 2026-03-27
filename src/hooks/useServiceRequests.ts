@@ -26,7 +26,7 @@ export function useServiceRequests(userId?: string) {
         .from('service_requests')
         .insert({
           ...requestData,
-          customer_id: userId,
+          customer_id: userId || null, // Allow guest
           status: 'pending',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -44,7 +44,7 @@ export function useServiceRequests(userId?: string) {
           .insert({
             ...paymentData,
             service_request_id: request.id,
-            payer_id: userId,
+            payer_id: userId || null, // Allow guest
             status: paymentData.status || 'pending',
             created_at: new Date().toISOString(),
           });

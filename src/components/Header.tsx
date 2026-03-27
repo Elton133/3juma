@@ -31,10 +31,18 @@ const Header: React.FC = () => {
               {item.label}
             </Link>
           ))}
-          {user && (
-            <button onClick={logout} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors">
-              <LogOut className="w-3.5 h-3.5" /> Sign Out
-            </button>
+          {user ? (
+            <div className="flex items-center gap-6 pl-6 border-l border-gray-100">
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{user.name}</span>
+              <button onClick={logout} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors">
+                <LogOut className="w-3.5 h-3.5" /> Sign Out
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
+              <Link to="/login" className="px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 hover:bg-gray-50 rounded-xl transition-all">Sign In</Link>
+              <Link to="/signup" className="px-5 py-2 text-[10px] font-black uppercase tracking-widest bg-gray-900 text-white rounded-xl shadow-lg hover:bg-black transition-all">Join 3juma</Link>
+            </div>
           )}
         </nav>
 
@@ -44,19 +52,24 @@ const Header: React.FC = () => {
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden glass absolute top-16 left-0 w-full border-b border-white/20 p-6 space-y-4 shadow-lg z-50">
+        <div className="md:hidden glass absolute top-16 left-0 w-full border-b border-white/20 p-6 space-y-4 shadow-lg z-50 animate-in slide-in-from-top duration-300">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.path}
               to={item.path}
               onClick={() => setMobileMenuOpen(false)}
-              className="block w-full text-left px-5 py-4 rounded-2xl bg-white/50 font-black text-xs uppercase tracking-widest text-gray-900"
+              className="block w-full text-left px-5 py-4 rounded-2xl bg-white/50 font-black text-xs uppercase tracking-widest text-gray-900 border border-white/40"
             >
               {item.label}
             </Link>
           ))}
-          {user && (
-            <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="block w-full text-left px-5 py-4 rounded-2xl bg-red-50 font-black text-xs uppercase tracking-widest text-red-600">
+          {!user ? (
+            <div className="grid grid-cols-2 gap-3 pt-4">
+              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-white border border-gray-100 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-gray-900">Sign In</Link>
+              <Link to="/signup" onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-gray-900 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-white shadow-xl">Join Us</Link>
+            </div>
+          ) : (
+            <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="block w-full text-left px-5 py-4 rounded-2xl bg-red-50 font-black text-xs uppercase tracking-widest text-red-600 border border-red-100 mt-4">
               Sign Out
             </button>
           )}
