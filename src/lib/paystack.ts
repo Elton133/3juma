@@ -3,7 +3,7 @@
  * Handles digital payments for service deposits and full payments.
  */
 
-const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_demo';
+const PAYSTACK_PUBLIC_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || '';
 
 export interface PaystackConfig {
   email: string;
@@ -35,6 +35,9 @@ export const loadPaystackScript = (): Promise<boolean> => {
  * Triggers the Paystack payment popup
  */
 export const initializePaystack = async (config: PaystackConfig) => {
+  if (!PAYSTACK_PUBLIC_KEY.trim()) {
+    throw new Error('Paystack is not configured — set VITE_PAYSTACK_PUBLIC_KEY');
+  }
   const isLoaded = await loadPaystackScript();
   if (!isLoaded) {
     throw new Error('Paystack script failed to load');

@@ -28,7 +28,14 @@ const MapView: React.FC = () => {
   );
 
   const handleBook = (worker: Worker) => {
-    navigate(`/booking?trade=${trade}&area=${encodeURIComponent(areaName)}&worker=${worker.id}`);
+    const q = new URLSearchParams({
+      trade,
+      area: areaName,
+      worker: worker.id,
+      lat: String(worker.lat),
+      lng: String(worker.lng),
+    });
+    navigate(`/booking?${q.toString()}`);
   };
 
   if (!selectedArea) return <div className="min-h-screen flex items-center justify-center bg-[#fafafa]"><p className="text-xs font-black text-gray-400 uppercase tracking-widest">Invalid search parameters.</p></div>;

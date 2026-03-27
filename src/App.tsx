@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/useAuth';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import Header from '@/components/Header';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import LandingPage from '@/pages/customer/LandingPage';
@@ -17,10 +18,31 @@ import AdminDashboard from '@/pages/admin/AdminDashboard';
 const VerifyEmail = () => {
   const navigate = useNavigate();
   React.useEffect(() => {
-    // Supabase handles the token automatically if we are on the site
-    // We just need to wait a second and redirect
-    const timer = setTimeout(() => navigate('/'), 3000);
-    return () => clearTimeout(timer);
+    if (!isSupabaseConfigured() || !supabase) {
+      navigate('/', { replace: true });
+      return;
+    }
+
+    let finished = false;
+    const goHome = () => {
+      if (finished) return;
+      finished = true;
+      navigate('/', { replace: true });
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) goHome();
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) goHome();
+    });
+
+    const fallback = setTimeout(goHome, 5000);
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(fallback);
+    };
   }, [navigate]);
 
   return (
@@ -47,6 +69,7 @@ export default function App() {
               {/* Auth */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/signup" element={<Navigate to="/register" replace />} />
               <Route path="/verify" element={<VerifyEmail />} />
 
               {/* Customer */}

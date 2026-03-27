@@ -35,11 +35,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     console.log('[3juma-Auth] Syncing user:', sessionUser.id);
 
     try {
       // Fetch the public user ID based on auth_id
-      let { data: publicUser, error } = await supabase!
+      let { data: publicUser, error } = await supabase
         .from('users')
         .select('id, full_name, role, phone')
         .eq('auth_id', sessionUser.id)
@@ -48,7 +53,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       // If not found, it might be a delay in the trigger, wait and retry once
       if (!publicUser && !error) {
         await new Promise(r => setTimeout(r, 1000));
-        const retry = await supabase!
+        const retry = await supabase
           .from('users')
           .select('id, full_name, role, phone')
           .eq('auth_id', sessionUser.id)

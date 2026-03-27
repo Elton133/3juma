@@ -37,17 +37,29 @@ export function useServiceRequests(userId?: string) {
 
       if (reqErr) throw reqErr;
 
-      // 2. Create initial payment (deposit or full)
+      // 2. Create initial payment (deposit or full) — columns must match DB (`transaction_ref`, not `payment_ref`; Paystack → `card`)
       if (paymentData && request) {
-        const { error: payErr } = await supabase
-          .from('payments')
-          .insert({
-            ...paymentData,
-            service_request_id: request.id,
-            payer_id: userId || null, // Allow guest
-            status: paymentData.status || 'pending',
-            created_at: new Date().toISOString(),
-          });
+        const rawMethod = (paymentData as Partial<Payment> & { payment_method?: string }).payment_method;
+        const dbMethod =
+          rawMethod === 'paystack' ? 'card' : rawMethod || 'cash';
+        const txRef =
+          paymentData.transaction_ref ??
+          (paymentData as { payment_ref?: string }).payment_ref ??
+          null;
+
+        const { error: payErr } = await supabase.from('payments').insert({
+          service_request_id: request.id,
+          payer_id: userId || null,
+          amount: Number(paymentData.amount ?? 0),
+          currency: paymentData.currency || 'GHS',
+          payment_type: paymentData.payment_type || 'deposit',
+          payment_method: dbMethod as Payment['payment_method'],
+          momo_number: paymentData.momo_number ?? null,
+          momo_provider: paymentData.momo_provider ?? null,
+          status: paymentData.status || 'pending',
+          transaction_ref: txRef,
+          created_at: new Date().toISOString(),
+        });
         if (payErr) throw payErr;
       }
 
@@ -140,6 +152,8 @@ export function useServiceRequests(userId?: string) {
     }
 
     try {
+      console.log(`[3juma] Updating request ${requestId} to ${status}`, additionalData);
+      
       const updates: any = {
         status,
         updated_at: new Date().toISOString(),
@@ -156,11 +170,22 @@ export function useServiceRequests(userId?: string) {
         .update(updates)
         .eq('id', requestId)
         .select()
-        .single();
+        .maybeSingle(); // Safer than .single()
 
-      if (err) throw err;
+      if (err) {
+        console.error('[3juma] Update error:', err);
+        throw err;
+      }
+      
+      if (!data) {
+        console.warn('[3juma] Update returned no data. Check RLS policies or if the request ID exists.');
+        throw new Error('Could not update request. You might not have permission or the request was not found.');
+      }
+
+      console.log('[3juma] Update successful:', data);
       return data as ServiceRequest;
     } catch (err: any) {
+      console.error('[3juma] updateStatus failed:', err);
       setError(err.message);
       return false;
     } finally {

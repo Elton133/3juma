@@ -20,6 +20,7 @@ export function useMarketplace(trade: string, centerLat: number, centerLng: numb
         .select(`
           id,
           trade,
+          area,
           bio,
           profile_photo_url,
           rating_avg,
@@ -43,7 +44,7 @@ export function useMarketplace(trade: string, centerLat: number, centerLng: numb
         userId: p.user_id,
         name: p.users?.full_name || 'Professional',
         trade: p.trade,
-        areaName: p.area || 'Accra', // Fallback or fetch from profile
+        areaName: p.area || 'Accra',
         rating: p.rating_avg || 5.0,
         jobsCompleted: p.jobs_completed || 0,
         verified: p.verification_status === 'approved',

@@ -12,6 +12,10 @@ const BookingView: React.FC = () => {
   const navigate = useNavigate();
   const trade = searchParams.get('trade') || '';
   const workerId = searchParams.get('worker') || '';
+  const latParam = searchParams.get('lat');
+  const lngParam = searchParams.get('lng');
+  const bookLat = latParam != null && !Number.isNaN(Number(latParam)) ? Number(latParam) : 0;
+  const bookLng = lngParam != null && !Number.isNaN(Number(lngParam)) ? Number(lngParam) : 0;
   
   const { user } = useAuth();
   const { worker, loading: workerLoading } = usePublicWorker(workerId);
@@ -37,17 +41,17 @@ const BookingView: React.FC = () => {
           trade: trade,
           description: description,
           location_text: worker.areaName,
-          lat: 0,
-          lng: 0,
+          lat: bookLat,
+          lng: bookLng,
           guest_name: user ? null : guestName,
           guest_phone: user ? null : guestPhone,
         },
         {
           amount: 20,
           payment_type: 'deposit',
-          payment_method: paymentMethod,
+          payment_method: paymentMethod === 'paystack' ? 'card' : paymentMethod,
           status: paymentMethod === 'paystack' ? 'completed' : 'pending',
-          payment_ref: paymentRef,
+          transaction_ref: paymentRef ?? null,
         }
       );
 

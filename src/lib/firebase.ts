@@ -1,14 +1,14 @@
 import { initializeApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage, type Messaging } from 'firebase/messaging';
 
-// Firebase configuration — replace with your project credentials
+// Firebase — set VITE_FIREBASE_* in `.env` (do not commit real keys as fallbacks)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyBaJrzraUUmPt-OWwggTRswruE85Wsnhuo',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'juma-de6c3.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'juma-de6c3',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'juma-de6c3.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '132268271024',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:132268271024:web:bf3b732b1c54cce629a275',
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
 };
 
 let app: ReturnType<typeof initializeApp> | null = null;

@@ -50,7 +50,7 @@ const WorkerDashboard: React.FC = () => {
   };
 
   const incomingJobs = requests.filter((j: ServiceRequest) => j.status === 'pending');
-  const activeJobs = requests.filter((j: ServiceRequest) => ['accepted', 'confirmed', 'en_route', 'in_progress', 'arrived'].includes(j.status));
+  const activeJobs = requests.filter((j: ServiceRequest) => ['accepted', 'en_route', 'in_progress', 'arrived'].includes(j.status));
   const completedJobs = requests.filter((j: ServiceRequest) => j.status === 'completed');
 
   const tabs = [

@@ -35,12 +35,12 @@ export interface Payment {
   amount: number;
   currency: string;
   payment_type: 'deposit' | 'final' | 'tip' | 'refund';
-  payment_method: 'momo' | 'card' | 'cash' | 'paystack';
+  /** DB `payments.payment_method` — Paystack is stored as `card` */
+  payment_method: 'momo' | 'card' | 'cash';
   momo_number: string | null;
   momo_provider: 'MTN' | 'Vodafone' | 'AirtelTigo' | null;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'refunded';
   transaction_ref: string | null;
-  payment_ref?: string;
   paid_at: string | null;
   created_at: string;
 }

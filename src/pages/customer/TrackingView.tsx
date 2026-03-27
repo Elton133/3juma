@@ -54,9 +54,7 @@ const TrackingView: React.FC = () => {
   const getStatusIndex = (status?: string) => {
     if (!status) return 0;
     const idx = steps.findIndex(s => s.id === status);
-    if (idx !== -1) return idx;
-    if (status === 'confirmed') return 1;
-    return 0;
+    return idx !== -1 ? idx : 0;
   };
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
