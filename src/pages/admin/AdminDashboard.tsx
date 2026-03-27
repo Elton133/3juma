@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigation, Users, TrendingUp, MapPin, Clock, Phone, Star, Shield, Eye, Filter, Search, Bell, CheckCircle, X as XIcon, AlertCircle } from 'lucide-react';
+import { Navigation, Users, TrendingUp, MapPin, Clock, Phone, Star, Shield, Eye, Filter, Search, Bell, CheckCircle, X as XIcon, AlertCircle, Award, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { generateMockWorkers } from '@/data/mock-workers';
 import { generateMockJobs } from '@/data/mock-jobs';
@@ -7,12 +7,17 @@ import { getTradeName, getTradeIcon } from '@/lib/utils';
 import { TRADES, STATUS_CONFIG } from '@/data/constants';
 import type { Worker } from '@/types/worker';
 import type { Job } from '@/types/job';
+import { useAdminVerification } from '@/hooks/useAdminVerification';
 
 const allWorkers = generateMockWorkers();
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'jobs' | 'workers' | 'analytics'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'workers' | 'analytics' | 'verification'>('jobs');
+  const { pendingWorkers, processing, approveWorker, rejectWorker } = useAdminVerification();
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [rejectNotes, setRejectNotes] = useState('');
+  const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [workerSearch, setWorkerSearch] = useState('');
@@ -36,9 +41,10 @@ const AdminDashboard: React.FC = () => {
   };
 
   const tabs = [
-    { id: 'jobs' as const, label: 'Live Dispatch' },
-    { id: 'workers' as const, label: 'Fleet Management' },
-    { id: 'analytics' as const, label: 'Analytics' },
+    { id: 'jobs' as const, label: 'Live Dispatch', count: null },
+    { id: 'workers' as const, label: 'Fleet Management', count: null },
+    { id: 'verification' as const, label: 'Verification', count: pendingWorkers.length || null },
+    { id: 'analytics' as const, label: 'Analytics', count: null },
   ];
 
   return (
@@ -74,8 +80,9 @@ const AdminDashboard: React.FC = () => {
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-gray-900 text-white shadow-lg' : 'bg-white text-gray-400 hover:text-gray-900'}`}>
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-gray-900 text-white shadow-lg' : 'bg-white text-gray-400 hover:text-gray-900'}`}>
               {tab.label}
+              {tab.count !== null && <span className={`px-2 py-0.5 rounded-lg text-[10px] ${activeTab === tab.id ? 'bg-white/20' : 'bg-red-50 text-red-500'}`}>{tab.count}</span>}
             </button>
           ))}
         </div>
@@ -193,6 +200,158 @@ const AdminDashboard: React.FC = () => {
                 })}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'verification' && (
+          <div className="space-y-6">
+            {pendingWorkers.length === 0 ? (
+              <div className="glass rounded-[2.5rem] p-12 border-white/40 text-center">
+                <CheckCircle className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                <p className="font-black text-gray-900 text-xl">All Clear!</p>
+                <p className="text-xs text-gray-400 mt-2">No workers pending verification.</p>
+              </div>
+            ) : (
+              pendingWorkers.map((worker) => (
+                <div key={worker.profile.id} className="glass rounded-[2.5rem] p-8 border-white/40 shadow-lg space-y-6">
+                  {/* Worker header */}
+                  <div className="flex items-center gap-5">
+                    {worker.profile.profile_photo_url ? (
+                      <img src={worker.profile.profile_photo_url} alt="" className="w-16 h-16 rounded-2xl object-cover shadow-md" />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center">
+                        <Users className="w-7 h-7 text-gray-300" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-black text-gray-900 text-lg">{worker.profile.full_name || 'Unnamed Worker'}</h3>
+                        <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-100">Pending</span>
+                      </div>
+                      <div className="flex items-center gap-3 mt-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        <span>{getTradeIcon(worker.profile.trade)} {getTradeName(worker.profile.trade)}</span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {worker.profile.area}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  {worker.profile.bio && (
+                    <div className="p-4 bg-gray-50 rounded-2xl">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">About</p>
+                      <p className="text-sm text-gray-700">{worker.profile.bio}</p>
+                    </div>
+                  )}
+
+                  {/* Ghana Card */}
+                  <div>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Ghana Card</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {worker.documents.map(doc => (
+                        <div key={doc.id} className="relative cursor-pointer group" onClick={() => setExpandedDoc(expandedDoc === doc.id ? null : doc.id)}>
+                          <img
+                            src={doc.file_url}
+                            alt={doc.document_type === 'ghana_card_front' ? 'Front' : 'Back'}
+                            className={`w-full rounded-2xl object-cover shadow-sm transition-all ${expandedDoc === doc.id ? 'h-auto' : 'h-40'}`}
+                          />
+                          <div className="absolute bottom-2 left-2 px-3 py-1 bg-black/50 rounded-lg text-[10px] font-black text-white uppercase tracking-widest">
+                            {doc.document_type === 'ghana_card_front' ? 'Front' : 'Back'}
+                          </div>
+                          <div className="absolute top-2 right-2 p-1.5 bg-black/30 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Eye className="w-4 h-4 text-white" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Certificates */}
+                  {worker.certificates.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2"><Award className="w-4 h-4" /> Certificates</p>
+                      <div className="space-y-2">
+                        {worker.certificates.map(cert => (
+                          <div key={cert.id} className="flex items-center gap-3 p-3 bg-amber-50/50 rounded-xl border border-amber-100">
+                            <Award className="w-4 h-4 text-amber-500" />
+                            <div className="flex-1">
+                              <p className="text-sm font-bold text-gray-900">{cert.certificate_name}</p>
+                              <p className="text-[10px] text-gray-400">{cert.issued_by}{cert.year_obtained ? ` • ${cert.year_obtained}` : ''}</p>
+                            </div>
+                            <a href={cert.file_url} target="_blank" rel="noreferrer" className="text-[10px] font-black text-indigo-500 uppercase tracking-widest hover:underline">View</a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Portfolio */}
+                  {worker.portfolio.length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2"><ImageIcon className="w-4 h-4" /> Work Portfolio</p>
+                      <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                        {worker.portfolio.map(img => (
+                          <div key={img.id} className="relative rounded-xl overflow-hidden">
+                            <img src={img.image_url} alt={img.caption} className="w-full h-24 object-cover" />
+                            {img.caption && (
+                              <div className="absolute bottom-0 left-0 right-0 p-1.5 bg-gradient-to-t from-black/60 to-transparent">
+                                <p className="text-[8px] font-bold text-white truncate">{img.caption}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="border-t border-gray-100 pt-6">
+                    {rejectingId === worker.profile.id ? (
+                      <div className="space-y-3">
+                        <textarea
+                          value={rejectNotes}
+                          onChange={(e) => setRejectNotes(e.target.value)}
+                          placeholder="Reason for rejection (will be shown to worker)..."
+                          className="w-full h-24 p-4 bg-red-50/50 border-2 border-red-100 focus:border-red-500 rounded-2xl text-sm text-gray-900 font-bold outline-none resize-none transition-all"
+                        />
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => { setRejectingId(null); setRejectNotes(''); }}
+                            className="px-5 py-3 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-gray-900 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={() => { rejectWorker(worker.profile.id, rejectNotes); setRejectingId(null); setRejectNotes(''); }}
+                            disabled={!rejectNotes.trim() || processing === worker.profile.id}
+                            className="px-6 py-3 bg-red-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg disabled:opacity-30 transition-all"
+                          >
+                            Confirm Rejection
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setRejectingId(worker.profile.id)}
+                          disabled={processing === worker.profile.id}
+                          className="px-6 py-3 border-2 border-gray-200 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-red-500 hover:text-red-500 transition-colors disabled:opacity-30"
+                        >
+                          Reject
+                        </button>
+                        <button
+                          onClick={() => approveWorker(worker.profile.id)}
+                          disabled={processing === worker.profile.id}
+                          className="flex-1 px-6 py-3 bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-emerald-600 transition-colors disabled:opacity-30"
+                        >
+                          {processing === worker.profile.id ? 'Processing...' : 'Approve & Verify'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

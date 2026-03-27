@@ -6,12 +6,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: '',
-  authDomain: '',
-  projectId: '',
-  storageBucket: '',
-  messagingSenderId: '',
-  appId: '',
+  apiKey: "AIzaSyBaJrzraUUmPt-OWwggTRswruE85Wsnhuo",
+  authDomain: "juma-de6c3.firebaseapp.com",
+  projectId: "juma-de6c3",
+  storageBucket: "juma-de6c3.firebasestorage.app",
+  messagingSenderId: "132268271024",
+  appId: "1:132268271024:web:bf3b732b1c54cce629a275",
 });
 
 const messaging = firebase.messaging();

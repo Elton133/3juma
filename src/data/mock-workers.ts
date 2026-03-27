@@ -12,6 +12,7 @@ export const generateMockWorkers = (): Worker[] => {
         const nameIndex = Math.floor(Math.random() * NAMES.length);
         workers.push({
           id: `${trade.id}-${area.name}-${i}`,
+          userId: `user-${trade.id}-${area.name}-${i}`,
           name: `${NAMES[nameIndex]} ${String.fromCharCode(65 + Math.floor(Math.random() * 26))}.`,
           trade: trade.id,
           areaName: area.name,

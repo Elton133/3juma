@@ -1,14 +1,12 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { GoogleMap, useJsApiLoader, Marker, Circle } from '@react-google-maps/api';
 import { ChevronLeft, MapPin, Search } from 'lucide-react';
 import { AREAS, GOOGLE_MAPS_API_KEY, MAP_STYLES } from '@/data/constants';
-import { generateMockWorkers } from '@/data/mock-workers';
-import { getTradeIcon, getTradeName, getTradeColor, calculateDistance } from '@/lib/utils';
+import { getTradeIcon, getTradeName, getTradeColor } from '@/lib/utils';
 import WorkerCard from '@/components/WorkerCard';
+import { useMarketplace } from '@/hooks/useMarketplace';
 import type { Worker } from '@/types/worker';
-
-const allWorkers = generateMockWorkers();
 
 const MapView: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -22,42 +20,35 @@ const MapView: React.FC = () => {
   const [searchRadius, setSearchRadius] = useState(5);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
 
-  const filteredWorkers = useMemo(() => {
-    if (!trade || !selectedArea) return [];
-    return allWorkers
-      .filter((w) => w.trade === trade && w.available)
-      .filter((w) => calculateDistance(selectedArea.lat, selectedArea.lng, w.lat, w.lng) <= searchRadius)
-      .sort((a, b) => {
-        const distA = calculateDistance(selectedArea.lat, selectedArea.lng, a.lat, a.lng);
-        const distB = calculateDistance(selectedArea.lat, selectedArea.lng, b.lat, b.lng);
-        if (Math.abs(distA - distB) < 0.5) return b.rating - a.rating;
-        return distA - distB;
-      })
-      .slice(0, 10);
-  }, [trade, selectedArea, searchRadius]);
+  const { workers: filteredWorkers, loading: marketplaceLoading } = useMarketplace(
+    trade,
+    selectedArea?.lat || 0,
+    selectedArea?.lng || 0,
+    searchRadius
+  );
 
   const handleBook = (worker: Worker) => {
     navigate(`/booking?trade=${trade}&area=${encodeURIComponent(areaName)}&worker=${worker.id}`);
   };
 
-  if (!selectedArea) return <div className="min-h-screen flex items-center justify-center"><p>Invalid search parameters.</p></div>;
+  if (!selectedArea) return <div className="min-h-screen flex items-center justify-center bg-[#fafafa]"><p className="text-xs font-black text-gray-400 uppercase tracking-widest">Invalid search parameters.</p></div>;
 
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col md:flex-row bg-[#fafafa] overflow-hidden">
-      {/* Sidebar */}
-      <div className="w-full md:w-96 bg-white/80 backdrop-blur-xl border-b md:border-b-0 md:border-r border-gray-100 flex flex-col overflow-hidden relative z-20 shadow-xl">
-        <div className="p-8 border-b border-gray-100">
-          <button onClick={() => navigate('/')} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-900 flex items-center gap-2 mb-8 group transition-colors">
+      {/* Sidebar — capped to ensure map visibility on mobile */}
+      <div className="w-full max-h-[35vh] md:max-h-none md:w-96 bg-white/90 backdrop-blur-xl border-b md:border-b-0 md:border-r border-gray-100 flex flex-col overflow-hidden relative z-20 shadow-xl">
+        <div className="p-3 md:p-8 border-b border-gray-100">
+          <button onClick={() => navigate('/')} className="text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-gray-900 flex items-center gap-2 mb-2 md:mb-8 group transition-colors">
             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Modify Search
           </button>
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gray-900 text-white rounded-2xl flex items-center justify-center text-2xl shadow-xl">{getTradeIcon(trade)}</div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 md:w-14 md:h-14 bg-gray-900 text-white rounded-xl md:rounded-2xl flex items-center justify-center text-lg md:text-2xl shadow-xl">{getTradeIcon(trade)}</div>
             <div>
-              <h2 className="font-black text-gray-900 text-xl tracking-tight leading-none">{getTradeName(trade)}s</h2>
-              <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mt-2 flex items-center gap-1"><MapPin className="w-3 h-3" /> {areaName}</p>
+              <h2 className="font-black text-gray-900 text-base md:text-xl tracking-tight leading-none">{getTradeName(trade)}s</h2>
+              <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest mt-1 md:mt-2 flex items-center gap-1"><MapPin className="w-3 h-3" /> {areaName}</p>
             </div>
           </div>
-          <div className="mt-10 space-y-4 px-2">
+          <div className="mt-3 md:mt-10 space-y-1 md:space-y-4 px-2">
             <div className="flex items-center justify-between">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Radius</label>
               <span className="text-xs font-black text-gray-900 bg-gray-100 px-3 py-1 rounded-lg">{searchRadius}km</span>
@@ -65,12 +56,18 @@ const MapView: React.FC = () => {
             <input type="range" min="1" max="10" value={searchRadius} onChange={(e) => setSearchRadius(Number(e.target.value))} className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-gray-900" />
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/10">
-          {filteredWorkers.length === 0 ? (
-            <div className="text-center py-20"><Search className="w-12 h-12 text-gray-200 mx-auto mb-4" /><p className="text-xs font-black text-gray-400 uppercase tracking-widest">No specialists found</p></div>
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 bg-gray-50/10">
+          {marketplaceLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+              <div className="w-12 h-12 bg-gray-200 rounded-full mb-4" />
+              <div className="h-2 w-24 bg-gray-200 rounded mb-2" />
+              <div className="h-2 w-16 bg-gray-200 rounded" />
+            </div>
+          ) : filteredWorkers.length === 0 ? (
+            <div className="text-center py-10 md:py-20"><Search className="w-10 h-10 md:w-12 md:h-12 text-gray-200 mx-auto mb-3" /><p className="text-xs font-black text-gray-400 uppercase tracking-widest">No specialists found</p></div>
           ) : (
             filteredWorkers.map((w) => (
-              <WorkerCard key={w.id} worker={w} customerLat={selectedArea.lat} customerLng={selectedArea.lng} onCall={() => alert(`Calling ${w.name}...`)} onBook={() => handleBook(w)} isSelected={selectedWorker?.id === w.id} onClick={() => setSelectedWorker(w)} />
+              <WorkerCard key={w.id} worker={w} customerLat={selectedArea.lat} customerLng={selectedArea.lng} onCall={() => window.location.href = `tel:${w.phone}`} onBook={() => handleBook(w)} isSelected={selectedWorker?.id === w.id} onClick={() => setSelectedWorker(w)} />
             ))
           )}
         </div>

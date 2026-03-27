@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /worker/dashboard
+Disallow: /tracking
+
+Sitemap: https://ejuma.com/sitemap.xml

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/useAuth';
 import Header from '@/components/Header';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -7,10 +7,34 @@ import LandingPage from '@/pages/customer/LandingPage';
 import MapView from '@/pages/customer/MapView';
 import BookingView from '@/pages/customer/BookingView';
 import TrackingView from '@/pages/customer/TrackingView';
+import Login from '@/pages/auth/Login';
+import Register from '@/pages/auth/Register';
 import WorkerLogin from '@/pages/worker/WorkerLogin';
 import WorkerDashboard from '@/pages/worker/WorkerDashboard';
 import AdminLogin from '@/pages/admin/AdminLogin';
 import AdminDashboard from '@/pages/admin/AdminDashboard';
+
+const VerifyEmail = () => {
+  const navigate = useNavigate();
+  React.useEffect(() => {
+    // Supabase handles the token automatically if we are on the site
+    // We just need to wait a second and redirect
+    const timer = setTimeout(() => navigate('/'), 3000);
+    return () => clearTimeout(timer);
+  }, [navigate]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto animate-bounce">
+          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor font-black"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+        </div>
+        <h2 className="text-2xl font-black text-gray-900 tracking-tighter">Email Verified!</h2>
+        <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Redirecting you to home...</p>
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   return (
@@ -20,6 +44,11 @@ export default function App() {
           <Header />
           <main className="flex-1">
             <Routes>
+              {/* Auth */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify" element={<VerifyEmail />} />
+
               {/* Customer */}
               <Route path="/" element={<LandingPage />} />
               <Route path="/search" element={<MapView />} />

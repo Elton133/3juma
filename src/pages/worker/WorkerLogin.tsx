@@ -15,10 +15,27 @@ const WorkerLogin: React.FC = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const success = await login(email, password, 'worker');
-    setLoading(false);
-    if (success) navigate('/worker/dashboard');
-    else setError('Invalid credentials. Try worker@3juma.com / worker123');
+    
+    try {
+      const { error: loginError } = await login(email, password);
+      
+      if (loginError) {
+        setError(loginError.message);
+        setLoading(false);
+        return;
+      }
+
+      // The role check will be handled by the sync logic in useAuth
+      // and the ProtectedRoute will handle the redirect if still wrong.
+      // But we can add a small delay to allow sync to happen.
+      setTimeout(() => {
+        navigate('/worker/dashboard');
+      }, 500);
+      
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+      setLoading(false);
+    }
   };
 
   return (

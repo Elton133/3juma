@@ -1,5 +1,6 @@
 export interface Worker {
   id: string;
+  userId: string;
   name: string;
   trade: string;
   areaName: string;
