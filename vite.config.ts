@@ -14,6 +14,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: null,
+      devOptions: { enabled: false },
       includeAssets: ["icon-192.png", "icon-512.png"],
       manifest: {
         name: "3juma — Ghana Skilled Trades",

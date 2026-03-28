@@ -2,10 +2,9 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App";
-import { initFirebase } from "@/lib/firebase";
+import { initOneSignal } from "@/lib/onesignal";
 
-// Initialize Firebase (gracefully degrades if not configured)
-initFirebase();
+initOneSignal();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

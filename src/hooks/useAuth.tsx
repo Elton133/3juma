@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { logoutOneSignal } from '@/lib/onesignal';
 
 export type UserRole = 'customer' | 'worker' | 'admin';
 
@@ -132,6 +133,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const logout = useCallback(async () => {
+    logoutOneSignal();
     if (supabase) await supabase.auth.signOut();
     setUser(null);
   }, []);

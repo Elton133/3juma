@@ -3,7 +3,7 @@ import { Briefcase, Star, DollarSign, Zap, Clock, MapPin, Phone, Bell } from 'lu
 import { useAuth } from '@/hooks/useAuth';
 import { getTradeIcon } from '@/lib/utils';
 import { STATUS_CONFIG } from '@/data/constants';
-import { requestNotificationPermission } from '@/lib/firebase';
+import { requestOneSignalPush } from '@/lib/onesignal';
 import WorkerProfileSetup from '@/pages/worker/WorkerProfileSetup';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
@@ -27,10 +27,8 @@ const WorkerDashboard: React.FC = () => {
   }, [user?.id, fetchRequests]);
 
   const handleEnableNotifications = async () => {
-    const token = await requestNotificationPermission();
-    if (token) {
-      setNotificationsEnabled(true);
-    }
+    const ok = await requestOneSignalPush(user?.id);
+    if (ok) setNotificationsEnabled(true);
   };
 
   const handleRequestPayout = async () => {
