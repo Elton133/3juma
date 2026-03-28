@@ -2,11 +2,12 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/lib/routes';
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Find Workers' },
-  { path: '/worker', label: 'Worker Portal' },
-  { path: '/admin', label: 'Dispatcher' },
+  { path: ROUTES.home, label: 'Find Workers' },
+  { path: ROUTES.workerLogin, label: 'Worker Portal' },
+  { path: ROUTES.adminLogin, label: 'Dispatcher' },
 ];
 
 const Header: React.FC = () => {
@@ -17,7 +18,7 @@ const Header: React.FC = () => {
   return (
     <header className="glass-header sticky top-0 z-50 border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center group transform active:scale-95 transition-all">
+        <Link to={ROUTES.home} className="flex items-center group transform active:scale-95 transition-all">
           <img src="/3juma.png" alt="3juma Logo" className="h-10 w-auto object-contain" />
         </Link>
 
@@ -40,8 +41,8 @@ const Header: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
-              <Link to="/login" className="px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 hover:bg-gray-50 rounded-xl transition-all">Sign In</Link>
-              <Link to="/register" className="px-5 py-2 text-[10px] font-black uppercase tracking-widest bg-gray-900 text-white rounded-xl shadow-lg hover:bg-black transition-all">Join 3juma</Link>
+              <Link to={ROUTES.login} className="px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 hover:bg-gray-50 rounded-xl transition-all">Sign In</Link>
+              <Link to={ROUTES.register} className="px-5 py-2 text-[10px] font-black uppercase tracking-widest bg-gray-900 text-white rounded-xl shadow-lg hover:bg-black transition-all">Join 3juma</Link>
             </div>
           )}
         </nav>
@@ -65,8 +66,8 @@ const Header: React.FC = () => {
           ))}
           {!user ? (
             <div className="grid grid-cols-2 gap-3 pt-4">
-              <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-white border border-gray-100 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-gray-900">Sign In</Link>
-              <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-gray-900 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-white shadow-xl">Join Us</Link>
+              <Link to={ROUTES.login} onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-white border border-gray-100 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-gray-900">Sign In</Link>
+              <Link to={ROUTES.register} onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-gray-900 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-white shadow-xl">Join Us</Link>
             </div>
           ) : (
             <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="block w-full text-left px-5 py-4 rounded-2xl bg-red-50 font-black text-xs uppercase tracking-widest text-red-600 border border-red-100 mt-4">

@@ -37,10 +37,12 @@ export function usePublicWorker(workerId: string) {
       if (err) throw err;
 
       if (data) {
+        const u = data.users as { full_name?: string; phone?: string } | { full_name?: string; phone?: string }[] | null;
+        const userRow = Array.isArray(u) ? u[0] : u;
         setWorker({
           id: data.id,
           userId: data.user_id,
-          name: data.users?.full_name || 'Professional',
+          name: userRow?.full_name || 'Professional',
           trade: data.trade,
           areaName: data.area || 'Accra',
           rating: data.rating_avg || 5.0,
@@ -50,7 +52,7 @@ export function usePublicWorker(workerId: string) {
           strikes: 0,
           subscriptionActive: true,
           profilePhoto: data.profile_photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.id}`,
-          phone: data.users?.phone || '',
+          phone: userRow?.phone || '',
           lat: 0, // Not needed for detail view normally
           lng: 0,
         });

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getPostLoginPath } from '@/lib/postLoginRedirect';
+import { ROUTES } from '@/lib/routes';
+import { supabase } from '@/lib/supabase';
 
 const WorkerLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -25,15 +28,16 @@ const WorkerLogin: React.FC = () => {
         return;
       }
 
-      // The role check will be handled by the sync logic in useAuth
-      // and the ProtectedRoute will handle the redirect if still wrong.
-      // But we can add a small delay to allow sync to happen.
-      setTimeout(() => {
-        navigate('/worker/dashboard');
-      }, 500);
-      
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred');
+      const path = await getPostLoginPath();
+      if (path === ROUTES.workerDashboard) {
+        navigate(path, { replace: true });
+      } else {
+        setError('This portal is for workers only. Use the main sign-in for customer accounts.');
+        await supabase?.auth.signOut();
+      }
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+    } finally {
       setLoading(false);
     }
   };

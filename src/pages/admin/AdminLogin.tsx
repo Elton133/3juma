@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getPostLoginPath } from '@/lib/postLoginRedirect';
+import { ROUTES } from '@/lib/routes';
+import { supabase } from '@/lib/supabase';
 
 const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -15,17 +18,31 @@ const AdminLogin: React.FC = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const success = await login(email, password, 'admin');
+    setError('');
+
+    const { error: loginError } = await login(email, password);
+
+    if (loginError) {
+      setError(loginError.message || 'Invalid credentials.');
+      setLoading(false);
+      return;
+    }
+
+    const path = await getPostLoginPath();
+    if (path === ROUTES.adminDashboard) {
+      navigate(path, { replace: true });
+    } else {
+      setError('This account is not an admin.');
+      await supabase?.auth.signOut();
+    }
     setLoading(false);
-    if (success) navigate('/admin/dashboard');
-    else setError('Invalid credentials. Try admin@3juma.com / admin123');
   };
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4">
       <div className="glass rounded-[3rem] p-12 max-w-md w-full shadow-2xl border-white/40">
         <div className="text-center mb-10">
-          <img src="/logo.png" alt="3juma Logo" className="h-16 w-auto mx-auto mb-6 object-contain" />
+          <img src="/3juma.png" alt="3juma Logo" className="h-16 w-auto mx-auto mb-6 object-contain" />
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Dispatch Center</h1>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Admin access only</p>
         </div>

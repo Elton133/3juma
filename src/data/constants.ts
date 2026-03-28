@@ -28,11 +28,13 @@ export const AREAS = [
 
 export const STATUS_CONFIG = {
   pending: { color: 'bg-amber-50 text-amber-600', label: 'Pending' },
-  confirmed: { color: 'bg-indigo-50 text-indigo-600', label: 'Confirmed' },
+  accepted: { color: 'bg-indigo-50 text-indigo-600', label: 'Accepted' },
   en_route: { color: 'bg-cyan-50 text-cyan-600', label: 'En Route' },
+  arrived: { color: 'bg-violet-50 text-violet-600', label: 'Arrived' },
   in_progress: { color: 'bg-orange-50 text-orange-600', label: 'In Progress' },
   completed: { color: 'bg-emerald-50 text-emerald-600', label: 'Completed' },
   cancelled: { color: 'bg-rose-50 text-rose-600', label: 'Cancelled' },
+  disputed: { color: 'bg-amber-50 text-amber-800', label: 'Disputed' },
 };
 
 export const MAP_STYLES = [
@@ -44,4 +46,4 @@ export const MAP_STYLES = [
   { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#c9c9c9' }] },
 ];
 
-export const GOOGLE_MAPS_API_KEY = ''; // Set your Google Maps API key here
+export const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';

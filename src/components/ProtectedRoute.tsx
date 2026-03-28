@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth, type UserRole } from '@/hooks/useAuth';
+import { ROUTES } from '@/lib/routes';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -24,7 +25,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole,
   }
 
   if (user.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+    if (user.role === 'worker') return <Navigate to={ROUTES.workerDashboard} replace />;
+    if (user.role === 'admin') return <Navigate to={ROUTES.adminDashboard} replace />;
+    return <Navigate to={ROUTES.home} replace />;
   }
 
   return <>{children}</>;

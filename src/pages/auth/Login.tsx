@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getPostLoginPath } from '@/lib/postLoginRedirect';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -25,10 +26,12 @@ const Login: React.FC = () => {
     if (loginError) {
       setError(loginError.message);
       setLoading(false);
-    } else {
-      // Auth change listener in useAuth will handle navigation
-      navigate('/');
+      return;
     }
+
+    const path = await getPostLoginPath();
+    navigate(path, { replace: true });
+    setLoading(false);
   };
 
   return (

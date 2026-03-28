@@ -28,9 +28,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const syncUser = useCallback(async (sessionUser: any) => {
+  const syncUser = useCallback(async (sessionUser: { id: string; email?: string; phone?: string; user_metadata?: Record<string, unknown> } | null) => {
     if (!sessionUser) {
-      console.log('[3juma-Auth] No session found');
       setUser(null);
       setLoading(false);
       return;
@@ -41,52 +40,53 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return;
     }
 
-    console.log('[3juma-Auth] Syncing user:', sessionUser.id);
-
     try {
-      // Fetch the public user ID based on auth_id
-      let { data: publicUser, error } = await supabase
-        .from('users')
-        .select('id, full_name, role, phone')
-        .eq('auth_id', sessionUser.id)
-        .maybeSingle();
+      let publicUser: { id: string; full_name: string; role: string; phone: string | null } | null = null;
+      let lastError: Error | null = null;
 
-      // If not found, it might be a delay in the trigger, wait and retry once
-      if (!publicUser && !error) {
-        await new Promise(r => setTimeout(r, 1000));
-        const retry = await supabase
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const { data, error } = await supabase
           .from('users')
           .select('id, full_name, role, phone')
           .eq('auth_id', sessionUser.id)
           .maybeSingle();
-        publicUser = retry.data;
-        if (publicUser) console.log('[3juma-Auth] Public user found on retry');
+
+        if (error) {
+          lastError = new Error(error.message);
+          break;
+        }
+        if (data) {
+          publicUser = data;
+          break;
+        }
+        await new Promise((r) => setTimeout(r, 400));
       }
 
-      if (error) console.error('[3juma-Auth] Sync error:', error);
+      if (lastError) {
+        if (import.meta.env.DEV) console.error('[3juma-Auth] Sync error:', lastError);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
 
       if (publicUser) {
-        console.log('[3juma-Auth] Public profile synced:', publicUser.role);
         setUser({
-          id: publicUser.id, // Use the public.users table ID
+          id: publicUser.id,
           name: publicUser.full_name,
           email: sessionUser.email!,
           role: publicUser.role as UserRole,
           phone: publicUser.phone || sessionUser.phone,
         });
       } else {
-        console.warn('[3juma-Auth] No public profile found, using fallback');
-        // Fallback to session metadata if public record is truly missing
-        setUser({
-          id: sessionUser.id,
-          name: sessionUser.user_metadata?.full_name || 'User',
-          email: sessionUser.email!,
-          role: sessionUser.user_metadata?.role || 'customer',
-          phone: sessionUser.phone,
-        });
+        if (import.meta.env.DEV) {
+          console.warn('[3juma-Auth] No public.users row for auth id — signing out (avoid wrong id in app)');
+        }
+        await supabase.auth.signOut();
+        setUser(null);
       }
     } catch (err) {
-      console.error('Error syncing user:', err);
+      if (import.meta.env.DEV) console.error('[3juma-Auth] Error syncing user:', err);
+      setUser(null);
     } finally {
       setLoading(false);
     }

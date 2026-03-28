@@ -13,15 +13,27 @@ export function useServiceRequests(userId?: string) {
     setError(null);
 
     if (!isSupabaseConfigured() || !supabase) {
-      // Local fallback: simulate successful creation
+      if (import.meta.env.PROD) {
+        setError('Service unavailable');
+        setLoading(false);
+        return null;
+      }
       const mockId = `job-${Date.now()}`;
-      console.log('[3juma] Supabase not configured — simulating job creation:', mockId);
+      if (import.meta.env.DEV) {
+        console.warn('[3juma] Supabase not configured — mock job id:', mockId);
+      }
       setLoading(false);
       return { id: mockId };
     }
 
     try {
       // 1. Create service request
+      const method = paymentData?.payment_method;
+      const paymentCompleted = paymentData?.status === 'completed';
+      const isCash = method === 'cash';
+      const paymentStatus =
+        paymentCompleted && !isCash ? 'paid' : isCash ? 'pending' : 'awaiting_deposit';
+
       const { data: request, error: reqErr } = await supabase
         .from('service_requests')
         .insert({
@@ -30,7 +42,7 @@ export function useServiceRequests(userId?: string) {
           status: 'pending',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
-          payment_status: paymentData?.payment_method === 'cash' ? 'pending' : 'awaiting_deposit',
+          payment_status: paymentStatus,
         })
         .select()
         .single();
@@ -39,9 +51,9 @@ export function useServiceRequests(userId?: string) {
 
       // 2. Create initial payment (deposit or full) — columns must match DB (`transaction_ref`, not `payment_ref`; Paystack → `card`)
       if (paymentData && request) {
-        const rawMethod = (paymentData as Partial<Payment> & { payment_method?: string }).payment_method;
+        const rawMethod = (paymentData as { payment_method?: string }).payment_method;
         const dbMethod =
-          rawMethod === 'paystack' ? 'card' : rawMethod || 'cash';
+          rawMethod === 'paystack' ? 'card' : (rawMethod as Payment['payment_method'] | undefined) || 'cash';
         const txRef =
           paymentData.transaction_ref ??
           (paymentData as { payment_ref?: string }).payment_ref ??

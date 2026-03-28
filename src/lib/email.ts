@@ -14,13 +14,19 @@ interface EmailOptions {
   text?: string;
 }
 
-export const sendEmail = async ({ to, subject, html, text }: EmailOptions): Promise<{ success: boolean; message: string }> => {
-  console.log(`[3juma-Email] Sending to ${to}: ${subject}`);
-  if (html) console.log(`[3juma-Email] HTML Content Snippet: ${html.substring(0, 50)}...`);
+export const sendEmail = async ({ to, subject, html }: EmailOptions): Promise<{ success: boolean; message: string }> => {
+  if (import.meta.env.DEV) {
+    console.log(`[3juma-Email] Sending to ${to}: ${subject}`);
+  }
   
   // TODO: Replace with your actual Email API key in .env
   const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY;
-  
+
+  if (RESEND_API_KEY && import.meta.env.PROD) {
+    console.warn('[3juma-Email] Resend must not use VITE_* keys in production — use a server or Edge Function.');
+    return { success: false, message: 'Email is not configured for production (server-side required).' };
+  }
+
   if (RESEND_API_KEY) {
     try {
       const response = await fetch('https://api.resend.com/emails', {

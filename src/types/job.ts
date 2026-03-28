@@ -9,7 +9,7 @@ export interface Job {
   locationText: string;
   lat: number;
   lng: number;
-  status: 'pending' | 'confirmed' | 'en_route' | 'in_progress' | 'completed' | 'cancelled';
+  status: 'pending' | 'accepted' | 'en_route' | 'in_progress' | 'completed' | 'cancelled';
   depositPaid: boolean;
   scheduledTime: Date;
   createdAt: Date;

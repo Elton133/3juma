@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Navigation, Users, TrendingUp, MapPin, Clock, Phone, Star, Shield, Eye, Filter, Search, Bell, CheckCircle, X as XIcon, AlertCircle, Award, Image as ImageIcon } from 'lucide-react';
+import { Navigation, Users, TrendingUp, MapPin, Clock, Star, Shield, Eye, Search, CheckCircle, AlertCircle, Award, Image as ImageIcon } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { generateMockWorkers } from '@/data/mock-workers';
 import { generateMockJobs } from '@/data/mock-jobs';
 import { getTradeName, getTradeIcon } from '@/lib/utils';
 import { TRADES, STATUS_CONFIG } from '@/data/constants';
-import type { Worker } from '@/types/worker';
 import type { Job } from '@/types/job';
 import { useAdminVerification } from '@/hooks/useAdminVerification';
 
@@ -33,7 +32,7 @@ const AdminDashboard: React.FC = () => {
     : allWorkers.slice(0, 20);
 
   const stats = {
-    activeJobs: jobs.filter((j) => ['pending', 'confirmed', 'en_route', 'in_progress'].includes(j.status)).length,
+    activeJobs: jobs.filter((j) => ['pending', 'accepted', 'en_route', 'in_progress'].includes(j.status)).length,
     onlineWorkers: allWorkers.filter((w) => w.available).length,
     totalWorkers: allWorkers.length,
     completedToday: jobs.filter((j) => j.status === 'completed').length,
@@ -91,7 +90,7 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'jobs' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {['all', 'pending', 'confirmed', 'en_route', 'in_progress', 'completed', 'cancelled'].map((f) => (
+              {['all', 'pending', 'accepted', 'en_route', 'in_progress', 'completed', 'cancelled'].map((f) => (
                 <button key={f} onClick={() => setJobFilter(f)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${jobFilter === f ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-400 hover:text-gray-900'}`}>
                   {f === 'all' ? 'All' : STATUS_CONFIG[f as keyof typeof STATUS_CONFIG]?.label || f}
                 </button>
@@ -104,7 +103,7 @@ const AdminDashboard: React.FC = () => {
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <span className="text-lg">{getTradeIcon(job.trade)}</span>
                     <p className="font-black text-gray-900 truncate">{job.description}</p>
-                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${STATUS_CONFIG[job.status].color}`}>{STATUS_CONFIG[job.status].label}</span>
+                    <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${STATUS_CONFIG[job.status as keyof typeof STATUS_CONFIG]?.color || 'bg-gray-100 text-gray-500'}`}>{STATUS_CONFIG[job.status as keyof typeof STATUS_CONFIG]?.label || job.status}</span>
                   </div>
                   <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest flex-wrap">
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.locationText}</span>

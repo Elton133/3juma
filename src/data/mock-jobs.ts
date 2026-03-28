@@ -3,7 +3,7 @@ import type { Job } from '@/types/job';
 import { TRADES, AREAS } from '@/data/constants';
 
 export const generateMockJobs = (workers: Worker[]): Job[] => {
-  const statuses: Job['status'][] = ['pending', 'confirmed', 'en_route', 'in_progress', 'completed', 'cancelled'];
+  const statuses: Job['status'][] = ['pending', 'accepted', 'en_route', 'in_progress', 'completed', 'cancelled'];
   const jobs: Job[] = [];
 
   for (let i = 0; i < 15; i++) {

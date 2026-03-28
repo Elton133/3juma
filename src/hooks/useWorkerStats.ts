@@ -19,39 +19,50 @@ export function useWorkerStats(workerId?: string) {
     }
 
     try {
-      // 1. Fetch profile for aggregate stats
       const { data: profile, error: profileErr } = await supabase
         .from('worker_profiles')
-        .select('rating_avg, jobs_completed, wallet_balance')
+        .select('rating_avg, jobs_completed')
         .eq('user_id', workerId)
         .single();
 
       if (profileErr) throw profileErr;
 
-      // 2. Fetch monthly earnings (simple sum of completed payments in current month)
       const startOfMonth = new Date();
       startOfMonth.setDate(1);
       startOfMonth.setHours(0, 0, 0, 0);
 
-      const { data: payments, error: payErr } = await supabase
-        .from('payments')
-        .select('amount')
-        .eq('status', 'completed')
-        .gte('created_at', startOfMonth.toISOString());
+      const { data: requests, error: reqErr } = await supabase
+        .from('service_requests')
+        .select('id')
+        .eq('worker_id', workerId);
 
-      if (payErr) throw payErr;
+      if (reqErr) throw reqErr;
 
-      const monthlyEarnings = payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+      const requestIds = (requests ?? []).map((r) => r.id);
+      let monthlyEarnings = 0;
+
+      if (requestIds.length > 0) {
+        const { data: payments, error: payErr } = await supabase
+          .from('payments')
+          .select('amount')
+          .in('service_request_id', requestIds)
+          .eq('status', 'completed')
+          .gte('created_at', startOfMonth.toISOString());
+
+        if (payErr) throw payErr;
+        monthlyEarnings = payments?.reduce((sum, p) => sum + Number(p.amount), 0) ?? 0;
+      }
 
       setStats({
         jobsDone: profile?.jobs_completed || 0,
-        rating: profile?.rating_avg || 5.0,
-        walletBalance: profile?.wallet_balance || 0,
-        monthlyEarnings: monthlyEarnings,
+        rating: Number(profile?.rating_avg) || 5.0,
+        walletBalance: 0,
+        monthlyEarnings,
         rank: (profile?.jobs_completed || 0) > 50 ? 'Elite' : 'Pro',
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to load stats';
+      setError(message);
     } finally {
       setLoading(false);
     }

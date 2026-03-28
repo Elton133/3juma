@@ -38,11 +38,14 @@ export function useMarketplace(trade: string, centerLat: number, centerLng: numb
 
       if (err) throw err;
 
-      // Map to frontend Worker type
-      const mappedWorkers: Worker[] = (data || []).map((p: any) => ({
+      // Map to frontend Worker type (Supabase may return joined `users` as object or array)
+      const mappedWorkers: Worker[] = (data || []).map((p: any) => {
+        const u = p.users as { full_name?: string; phone?: string } | { full_name?: string; phone?: string }[] | null;
+        const userRow = Array.isArray(u) ? u[0] : u;
+        return {
         id: p.id,
         userId: p.user_id,
-        name: p.users?.full_name || 'Professional',
+        name: userRow?.full_name || 'Professional',
         trade: p.trade,
         areaName: p.area || 'Accra',
         rating: p.rating_avg || 5.0,
@@ -52,11 +55,12 @@ export function useMarketplace(trade: string, centerLat: number, centerLng: numb
         strikes: p.strikes || 0,
         subscriptionActive: p.subscription_active || false,
         profilePhoto: p.profile_photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${p.id}`,
-        phone: p.users?.phone || '',
+        phone: userRow?.phone || '',
         // Mocking location nearby for now
         lat: centerLat + (Math.random() - 0.5) * 0.02,
         lng: centerLng + (Math.random() - 0.5) * 0.02,
-      }));
+      };
+      });
 
       // Filter by radius
       const filtered = mappedWorkers.filter(w => 
