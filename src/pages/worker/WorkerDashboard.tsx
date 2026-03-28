@@ -79,13 +79,19 @@ const WorkerDashboard: React.FC = () => {
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Verified {user?.role}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {!notificationsEnabled && (
-              <button onClick={handleEnableNotifications} className="flex items-center gap-2 px-5 py-3 bg-amber-50 text-amber-600 rounded-2xl text-xs font-black uppercase tracking-widest border border-amber-100 hover:bg-amber-100 transition-colors">
-                <Bell className="w-4 h-4" /> Enable Alerts
-              </button>
-            )}
-            <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 text-emerald-600 rounded-2xl font-black text-xs uppercase tracking-widest border border-emerald-100">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex flex-col gap-2">
+              {!notificationsEnabled && (
+                <button onClick={handleEnableNotifications} className="flex items-center gap-2 px-5 py-3 bg-amber-50 text-amber-600 rounded-2xl text-xs font-black uppercase tracking-widest border border-amber-100 hover:bg-amber-100 transition-colors w-fit">
+                  <Bell className="w-4 h-4" /> Enable Alerts
+                </button>
+              )}
+              <div
+                className="onesignal-customlink-container min-h-[44px] flex items-center"
+                aria-label="Notification subscription"
+              />
+            </div>
+            <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 text-emerald-600 rounded-2xl font-black text-xs uppercase tracking-widest border border-emerald-100 sm:ml-auto">
               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" /> Online
             </div>
           </div>

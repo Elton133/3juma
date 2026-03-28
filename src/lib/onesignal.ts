@@ -1,6 +1,7 @@
 import OneSignal from 'react-onesignal';
 
 const appId = (import.meta.env.VITE_ONESIGNAL_APP_ID || '').trim();
+const safariWebId = (import.meta.env.VITE_ONESIGNAL_SAFARI_WEB_ID || '').trim();
 
 let initPromise: Promise<void> | null = null;
 
@@ -14,12 +15,19 @@ export function initOneSignal(): void {
   if (initPromise !== null) return;
 
   const base = import.meta.env.BASE_URL;
-  const scriptSrc = `${base.endsWith('/') ? base : `${base}/`}vendor-os-boot.js`;
+  const root = base.endsWith('/') ? base : `${base}/`;
+  const scriptSrc = `${root}vendor-os-boot.js`;
+  const serviceWorkerPath = `${root}OneSignalSDKWorker.js`;
 
   initPromise = OneSignal.init({
     appId,
+    safari_web_id: safariWebId || undefined,
     scriptSrc,
+    serviceWorkerPath,
     allowLocalhostAsSecureOrigin: true,
+    notifyButton: {
+      enable: true,
+    },
     promptOptions: {
       slidedown: {
         prompts: [
