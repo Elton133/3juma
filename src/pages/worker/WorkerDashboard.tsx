@@ -3,7 +3,8 @@ import { Briefcase, Star, DollarSign, Zap, Clock, MapPin, Phone, Bell } from 'lu
 import { useAuth } from '@/hooks/useAuth';
 import { getTradeIcon } from '@/lib/utils';
 import { STATUS_CONFIG } from '@/data/constants';
-import { requestOneSignalPush } from '@/lib/onesignal';
+import { supabase } from '@/lib/supabase';
+import { isPushApiSupported, isWebPushConfigured, subscribeWebPush } from '@/lib/webPushClient';
 import WorkerProfileSetup from '@/pages/worker/WorkerProfileSetup';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
@@ -16,6 +17,7 @@ const WorkerDashboard: React.FC = () => {
   
   const [activeTab, setActiveTab] = useState<'incoming' | 'active' | 'history' | 'earnings' | 'profile'>('incoming');
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [pushMessage, setPushMessage] = useState<string | null>(null);
   const [payoutLoading, setPayoutLoading] = useState(false);
 
   useEffect(() => {
@@ -27,8 +29,30 @@ const WorkerDashboard: React.FC = () => {
   }, [user?.id, fetchRequests]);
 
   const handleEnableNotifications = async () => {
-    const ok = await requestOneSignalPush(user?.id);
-    if (ok) setNotificationsEnabled(true);
+    setPushMessage(null);
+    if (!supabase || !user?.id) return;
+    if (!isWebPushConfigured()) {
+      setPushMessage('Add VITE_VAPID_PUBLIC_KEY to .env (run npm run vapid:keys), then restart the app.');
+      return;
+    }
+    if (!isPushApiSupported()) {
+      setPushMessage('Push is not supported in this browser.');
+      return;
+    }
+    const result = await subscribeWebPush(supabase, user.id);
+    if (result.ok) {
+      setNotificationsEnabled(true);
+      setPushMessage(null);
+      return;
+    }
+    const hints: Record<string, string> = {
+      not_configured: 'Missing VITE_VAPID_PUBLIC_KEY.',
+      not_supported: 'This browser does not support Web Push.',
+      no_sw: 'Service worker not ready — wait a few seconds, use HTTPS, or run a production build.',
+      permission_denied: 'Notifications are blocked. Enable them in browser settings for this site.',
+      subscribe_failed: result.detail || 'Could not subscribe.',
+    };
+    setPushMessage(hints[result.reason] || 'Could not enable alerts.');
   };
 
   const handleRequestPayout = async () => {
@@ -80,16 +104,22 @@ const WorkerDashboard: React.FC = () => {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 max-w-xs">
               {!notificationsEnabled && (
-                <button onClick={handleEnableNotifications} className="flex items-center gap-2 px-5 py-3 bg-amber-50 text-amber-600 rounded-2xl text-xs font-black uppercase tracking-widest border border-amber-100 hover:bg-amber-100 transition-colors w-fit">
-                  <Bell className="w-4 h-4" /> Enable Alerts
+                <button
+                  type="button"
+                  onClick={() => void handleEnableNotifications()}
+                  className="flex items-center gap-2 px-5 py-3 bg-amber-50 text-amber-600 rounded-2xl text-xs font-black uppercase tracking-widest border border-amber-100 hover:bg-amber-100 transition-colors w-fit"
+                >
+                  <Bell className="w-4 h-4" /> Web push alerts
                 </button>
               )}
-              <div
-                className="onesignal-customlink-container min-h-[44px] flex items-center"
-                aria-label="Notification subscription"
-              />
+              {notificationsEnabled && (
+                <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Push enabled — send from your backend with the web-push package.</p>
+              )}
+              {pushMessage && (
+                <p className="text-[10px] font-bold text-amber-800 leading-snug">{pushMessage}</p>
+              )}
             </div>
             <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 text-emerald-600 rounded-2xl font-black text-xs uppercase tracking-widest border border-emerald-100 sm:ml-auto">
               <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" /> Online

@@ -13,10 +13,16 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
       registerType: "autoUpdate",
       injectRegister: null,
       devOptions: { enabled: false },
       includeAssets: ["icon-192.png", "icon-512.png"],
+      injectManifest: {
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webmanifest}"],
+      },
       manifest: {
         name: "3juma — Ghana Skilled Trades",
         short_name: "3juma",

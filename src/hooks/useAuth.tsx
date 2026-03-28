@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { logoutOneSignal } from '@/lib/onesignal';
+import { removeAllWebPushForUser } from '@/lib/webPushClient';
 
 export type UserRole = 'customer' | 'worker' | 'admin';
 
@@ -133,10 +134,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const logout = useCallback(async () => {
+    if (supabase && user?.id) await removeAllWebPushForUser(supabase, user.id);
     logoutOneSignal();
     if (supabase) await supabase.auth.signOut();
     setUser(null);
-  }, []);
+  }, [user?.id]);
 
   return (
     <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, signUp, logout }}>
