@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { triggerCustomerJobUpdatePush, triggerWorkerNewJobPush } from '@/lib/appPushTriggers';
 import type { ServiceRequest, Payment } from '@/types/payment';
 
 export function useServiceRequests(userId?: string) {
@@ -73,6 +74,10 @@ export function useServiceRequests(userId?: string) {
           created_at: new Date().toISOString(),
         });
         if (payErr) throw payErr;
+      }
+
+      if (request?.id) {
+        void triggerWorkerNewJobPush(request.id);
       }
 
       return request;
@@ -195,6 +200,20 @@ export function useServiceRequests(userId?: string) {
       }
 
       console.log('[3juma] Update successful:', data);
+
+      const notifyCustomer: ServiceRequest['status'][] = [
+        'accepted',
+        'en_route',
+        'arrived',
+        'in_progress',
+        'completed',
+        'cancelled',
+        'disputed',
+      ];
+      if (notifyCustomer.includes(status)) {
+        void triggerCustomerJobUpdatePush(requestId, status);
+      }
+
       return data as ServiceRequest;
     } catch (err: any) {
       console.error('[3juma] updateStatus failed:', err);

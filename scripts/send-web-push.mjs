@@ -7,7 +7,8 @@
  * 3. Run:
  *    VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... node scripts/send-web-push.mjs ./subscription.json
  *
- * subscription.json shape: { "endpoint": "...", "keys": { "p256dh": "...", "auth": "..." } }
+ * subscription.json: Web Push JSON *or* one Supabase row export:
+ *   { "endpoint", "keys": { "p256dh", "auth" } }  OR  { "endpoint", "p256dh", "auth" }
  */
 import fs from 'node:fs';
 import webPush from 'web-push';
@@ -23,7 +24,18 @@ if (!publicKey || !privateKey || !path) {
 }
 
 const raw = fs.readFileSync(path, 'utf8');
-const subscription = JSON.parse(raw);
+const parsed = JSON.parse(raw);
+
+/** Web Push shape, or a flat row from Supabase `push_subscriptions`. */
+function toPushSubscription(obj) {
+  if (obj?.endpoint && obj?.keys?.p256dh && obj?.keys?.auth) return obj;
+  if (obj?.endpoint && obj?.p256dh && obj?.auth) {
+    return { endpoint: obj.endpoint, keys: { p256dh: obj.p256dh, auth: obj.auth } };
+  }
+  throw new Error('Expected { endpoint, keys: { p256dh, auth } } or { endpoint, p256dh, auth }');
+}
+
+const subscription = toPushSubscription(parsed);
 
 webPush.setVapidDetails(subject, publicKey, privateKey);
 

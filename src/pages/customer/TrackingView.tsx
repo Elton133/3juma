@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Truck, Hammer, Navigation, CheckCircle, Clock, Loader2 } from 'lucide-react';
+import { ChevronLeft, Truck, Hammer, Navigation, CheckCircle, Clock, Loader2, Bell } from 'lucide-react';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import type { ServiceRequest } from '@/types/payment';
 import ReviewModal from '@/components/ReviewModal';
 import { useReviews } from '@/hooks/useReviews';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/lib/supabase';
+import { isPushApiSupported, isWebPushConfigured, subscribeWebPush } from '@/lib/webPushClient';
 
 const TrackingView: React.FC = () => {
   const navigate = useNavigate();
@@ -19,6 +21,8 @@ const TrackingView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showReview, setShowReview] = useState(false);
   const [reviewed, setReviewed] = useState(false);
+  const [jobPushEnabled, setJobPushEnabled] = useState(false);
+  const [jobPushMsg, setJobPushMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!requestId) {
@@ -55,6 +59,32 @@ const TrackingView: React.FC = () => {
     if (!status) return 0;
     const idx = steps.findIndex(s => s.id === status);
     return idx !== -1 ? idx : 0;
+  };
+
+  const handleEnableJobPush = async () => {
+    setJobPushMsg(null);
+    if (!user?.id || !supabase) {
+      setJobPushMsg('Sign in to get push updates for this job.');
+      return;
+    }
+    if (!isWebPushConfigured()) {
+      setJobPushMsg('App push is not configured (VITE_VAPID_PUBLIC_KEY).');
+      return;
+    }
+    if (!isPushApiSupported()) {
+      setJobPushMsg('Push is not supported in this browser.');
+      return;
+    }
+    const result = await subscribeWebPush(supabase, user.id);
+    if (result.ok) {
+      setJobPushEnabled(true);
+      return;
+    }
+    setJobPushMsg(
+      result.reason === 'permission_denied'
+        ? 'Allow notifications for this site in your browser settings.'
+        : result.detail || 'Could not enable job alerts.',
+    );
   };
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
@@ -141,6 +171,24 @@ const TrackingView: React.FC = () => {
                currentIdx === 0 ? 'Searching for worker...' : 'Expert is en route'}
             </div>
             
+            {user && request && !jobPushEnabled && (
+              <div className="pt-4 border-t border-gray-100 space-y-2">
+                <button
+                  type="button"
+                  onClick={() => void handleEnableJobPush()}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors"
+                >
+                  <Bell className="w-4 h-4" /> Notify me about this job
+                </button>
+                {jobPushMsg && <p className="text-[10px] font-bold text-amber-700 text-center">{jobPushMsg}</p>}
+              </div>
+            )}
+            {user && request && jobPushEnabled && (
+              <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest text-center pt-2">
+                Job alerts on — we’ll ping you when your worker updates status.
+              </p>
+            )}
+
             {request?.worker_name && (
               <div className="flex items-center gap-4 pt-6 border-t border-gray-100">
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-lg md:text-xl shadow-sm border border-gray-100">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigation, Users, TrendingUp, MapPin, Clock, Star, Shield, Eye, Search, CheckCircle, AlertCircle, Award, Image as ImageIcon } from 'lucide-react';
+import { Navigation, Users, TrendingUp, MapPin, Clock, Star, Shield, Eye, Search, CheckCircle, AlertCircle, Award, Image as ImageIcon, Bell, Send } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { generateMockWorkers } from '@/data/mock-workers';
 import { generateMockJobs } from '@/data/mock-jobs';
@@ -7,12 +7,13 @@ import { getTradeName, getTradeIcon } from '@/lib/utils';
 import { TRADES, STATUS_CONFIG } from '@/data/constants';
 import type { Job } from '@/types/job';
 import { useAdminVerification } from '@/hooks/useAdminVerification';
+import { triggerMarketingPush } from '@/lib/appPushTriggers';
 
 const allWorkers = generateMockWorkers();
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'jobs' | 'workers' | 'analytics' | 'verification'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'workers' | 'analytics' | 'verification' | 'push'>('jobs');
   const { pendingWorkers, processing, approveWorker, rejectWorker } = useAdminVerification();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNotes, setRejectNotes] = useState('');
@@ -20,6 +21,11 @@ const AdminDashboard: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [workerSearch, setWorkerSearch] = useState('');
+  const [pushTitle, setPushTitle] = useState('3juma');
+  const [pushBody, setPushBody] = useState('');
+  const [pushUrl, setPushUrl] = useState('/');
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushFeedback, setPushFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     setJobs(generateMockJobs(allWorkers));
@@ -44,6 +50,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'workers' as const, label: 'Fleet Management', count: null },
     { id: 'verification' as const, label: 'Verification', count: pendingWorkers.length || null },
     { id: 'analytics' as const, label: 'Analytics', count: null },
+    { id: 'push' as const, label: 'Push', count: null },
   ];
 
   return (
@@ -199,6 +206,73 @@ const AdminDashboard: React.FC = () => {
                 })}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'push' && (
+          <div className="glass rounded-[2.5rem] p-8 md:p-10 border-white/40 space-y-6 max-w-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center">
+                <Bell className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Web push broadcast</h2>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                  Admin only — everyone who enabled alerts (workers & customers)
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Deploy the <code className="text-gray-800 bg-gray-100 px-1 rounded">send-app-push</code> Edge Function and set VAPID secrets. Requires{' '}
+              <code className="text-gray-800 bg-gray-100 px-1 rounded">push_subscriptions</code> rows from the app.
+            </p>
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Title</label>
+              <input
+                value={pushTitle}
+                onChange={(e) => setPushTitle(e.target.value)}
+                className="w-full h-12 px-4 rounded-2xl border border-gray-200 text-sm font-bold text-gray-900"
+              />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Message</label>
+              <textarea
+                value={pushBody}
+                onChange={(e) => setPushBody(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-bold text-gray-900 resize-none"
+                placeholder="We’re glad to have you — rate us on the store…"
+              />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Open URL (path)</label>
+              <input
+                value={pushUrl}
+                onChange={(e) => setPushUrl(e.target.value)}
+                className="w-full h-12 px-4 rounded-2xl border border-gray-200 text-sm font-bold text-gray-900"
+              />
+            </div>
+            <button
+              type="button"
+              disabled={pushBusy || !pushBody.trim()}
+              onClick={async () => {
+                setPushFeedback(null);
+                setPushBusy(true);
+                const r = await triggerMarketingPush({ title: pushTitle.trim() || '3juma', body: pushBody.trim(), url: pushUrl.trim() || '/' });
+                setPushBusy(false);
+                setPushFeedback(
+                  r.ok
+                    ? { ok: true, text: `Sent about ${r.sent ?? 0} notification(s).` }
+                    : { ok: false, text: r.error ?? 'Failed' },
+                );
+              }}
+              className="w-full h-14 rounded-2xl bg-gray-900 text-white text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-colors disabled:opacity-30"
+            >
+              <Send className="w-4 h-4" /> Send to all subscribers
+            </button>
+            {pushFeedback && (
+              <p
+                className={`text-[10px] font-bold uppercase tracking-wider ${pushFeedback.ok ? 'text-emerald-700' : 'text-red-600'}`}
+              >
+                {pushFeedback.text}
+              </p>
+            )}
           </div>
         )}
 
