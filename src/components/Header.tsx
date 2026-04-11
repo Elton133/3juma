@@ -7,7 +7,6 @@ import { ROUTES } from '@/lib/routes';
 const NAV_ITEMS = [
   { path: ROUTES.home, label: 'Find Workers' },
   { path: ROUTES.workerLogin, label: 'Worker Portal' },
-  { path: ROUTES.adminLogin, label: 'Dispatcher' },
 ];
 
 const Header: React.FC = () => {
@@ -19,7 +18,7 @@ const Header: React.FC = () => {
     <header className="glass-header sticky top-0 z-50 border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link to={ROUTES.home} className="flex items-center group transform active:scale-95 transition-all">
-          <img src="/3juma.png" alt="3juma Logo" className="h-10 w-auto object-contain" />
+          <img src="/3juma.png" alt="Ejuma — home" className="h-10 w-auto object-contain" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">

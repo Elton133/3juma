@@ -12,10 +12,12 @@
     "supabase:login": "supabase login",
     "supabase:link": "supabase link",
     "supabase:deploy-push": "supabase functions deploy send-app-push",
+    "supabase:deploy-auth-email": "supabase functions deploy send-auth-email --no-verify-jwt",
     "supabase:secrets": "supabase secrets"
   },
   "dependencies": {
-    "@react-google-maps/api": "^2.20.8",
+    "@hugeicons/core-free-icons": "^4.1.1",
+    "@hugeicons/react": "^1.1.6",
     "@supabase/supabase-js": "^2.100.1",
     "clsx": "2.1.1",
     "lucide-react": "^1.7.0",

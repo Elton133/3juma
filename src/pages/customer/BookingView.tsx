@@ -4,7 +4,8 @@ import { X, Truck, Smartphone, CreditCard, Banknote, Loader2, CheckCircle, Edit 
 import { useAuth } from '@/hooks/useAuth';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { usePublicWorker } from '@/hooks/usePublicWorker';
-import { getTradeIcon, getTradeName } from '@/lib/utils';
+import { getTradeName } from '@/lib/utils';
+import { TradeIcon } from '@/components/TradeIcon';
 import { initializePaystack } from '@/lib/paystack';
 
 const BookingView: React.FC = () => {
@@ -160,8 +161,9 @@ const BookingView: React.FC = () => {
                   <img src={worker.profilePhoto} className="w-16 h-16 md:w-20 md:h-20 rounded-2xl object-cover shadow-lg" alt={`${worker.name} Profile`} />
                   <div>
                     <p className="font-black text-lg md:text-xl text-gray-900 tracking-tight">{worker.name}</p>
-                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1">
-                      {getTradeIcon(trade)} {getTradeName(trade)} Specialist
+                    <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+                      <TradeIcon tradeId={trade} size={14} className="text-emerald-500" />
+                      {getTradeName(trade)} Specialist
                     </p>
                   </div>
                 </div>

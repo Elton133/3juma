@@ -1,7 +1,8 @@
 import React from 'react';
 import { Star, Shield, Clock, Navigation, Phone, Calendar } from 'lucide-react';
 import type { Worker } from '@/types/worker';
-import { getTradeIcon, getTradeName, calculateDistance, calculateETA } from '@/lib/utils';
+import { getTradeName, calculateDistance, calculateETA } from '@/lib/utils';
+import { TradeIcon } from '@/components/TradeIcon';
 
 interface WorkerCardProps {
   worker: Worker;
@@ -32,8 +33,9 @@ const WorkerCard: React.FC<WorkerCardProps> = ({ worker, customerLat, customerLn
             <h3 className="font-black text-gray-900 truncate text-xl tracking-tight">{worker.name}</h3>
             {worker.verified && <Shield className="w-5 h-5 text-emerald-500 fill-current" />}
           </div>
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">
-            {getTradeIcon(worker.trade)} {getTradeName(worker.trade)}
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1 flex items-center gap-1.5">
+            <TradeIcon tradeId={worker.trade} size={14} className="text-gray-400" />
+            {getTradeName(worker.trade)}
           </p>
           <div className="flex items-center gap-4 mt-4">
             <span className="flex items-center gap-1.5 text-gray-900 font-black text-sm">

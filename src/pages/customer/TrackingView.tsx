@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Truck, Hammer, Navigation, CheckCircle, Clock, Loader2, Bell } from 'lucide-react';
+import { ChevronLeft, Truck, Hammer, CheckCircle, Clock, Loader2, Bell } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Wrench01Icon } from '@hugeicons/core-free-icons';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import type { ServiceRequest } from '@/types/payment';
 import ReviewModal from '@/components/ReviewModal';
@@ -21,8 +23,15 @@ const TrackingView: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showReview, setShowReview] = useState(false);
   const [reviewed, setReviewed] = useState(false);
+  const [reviewPromptDismissed, setReviewPromptDismissed] = useState(false);
   const [jobPushEnabled, setJobPushEnabled] = useState(false);
   const [jobPushMsg, setJobPushMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setReviewPromptDismissed(false);
+    setReviewed(false);
+    setShowReview(false);
+  }, [requestId]);
 
   useEffect(() => {
     if (!requestId) {
@@ -34,31 +43,33 @@ const TrackingView: React.FC = () => {
       const data = await getRequest(requestId);
       if (data) {
         setRequest(data);
-        if (data.status === 'completed' && !reviewed) {
+        if (data.status === 'completed' && user && !reviewed && !reviewPromptDismissed) {
           setShowReview(true);
         }
       }
       setLoading(false);
     };
 
-    loadRequest();
-    const interval = setInterval(loadRequest, 5000);
+    void loadRequest();
+    const interval = setInterval(() => void loadRequest(), 5000);
     return () => clearInterval(interval);
-  }, [requestId, getRequest, reviewed]);
+  }, [requestId, getRequest, reviewed, reviewPromptDismissed, user]);
 
+  /** Fewer dots — matches simplified worker flow (alerts on accept, on the way, done). */
   const steps = [
     { id: 'pending', label: 'Requested', icon: Clock },
-    { id: 'accepted', label: 'Dispatched', icon: Truck },
-    { id: 'en_route', label: 'En Route', icon: Navigation },
-    { id: 'arrived', label: 'Arrived', icon: CheckCircle },
-    { id: 'in_progress', label: 'Working', icon: Hammer },
-    { id: 'completed', label: 'Finished', icon: CheckCircle },
+    { id: 'active', label: 'On the way', icon: Truck },
+    { id: 'working', label: 'On site', icon: Hammer },
+    { id: 'completed', label: 'Done', icon: CheckCircle },
   ];
 
   const getStatusIndex = (status?: string) => {
     if (!status) return 0;
-    const idx = steps.findIndex(s => s.id === status);
-    return idx !== -1 ? idx : 0;
+    if (status === 'pending' || status === 'cancelled' || status === 'disputed') return 0;
+    if (status === 'accepted' || status === 'en_route') return 1;
+    if (status === 'arrived' || status === 'in_progress') return 2;
+    if (status === 'completed') return 3;
+    return 0;
   };
 
   const handleEnableJobPush = async () => {
@@ -114,9 +125,12 @@ const TrackingView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#fafafa] py-12 md:py-20 px-4">
-      <ReviewModal 
-        isOpen={showReview} 
-        onClose={() => setShowReview(false)} 
+      <ReviewModal
+        isOpen={showReview}
+        onClose={() => {
+          setShowReview(false);
+          setReviewPromptDismissed(true);
+        }}
         onSubmit={handleReviewSubmit}
         workerName={request?.worker_name || 'the Specialist'}
       />
@@ -144,7 +158,10 @@ const TrackingView: React.FC = () => {
 
           <div className="flex justify-between relative max-w-lg mx-auto px-1 md:px-2">
             <div className="absolute top-4 md:top-5 left-0 w-full h-0.5 bg-gray-100 -translate-y-1/2" />
-            <div className="absolute top-4 md:top-5 left-0 h-0.5 bg-emerald-500 -translate-y-1/2 transition-all duration-1000" style={{ width: `${(currentIdx / (steps.length - 1)) * 100}%` }} />
+            <div
+              className="absolute top-4 md:top-5 left-0 h-0.5 bg-emerald-500 -translate-y-1/2 transition-all duration-1000"
+              style={{ width: `${steps.length > 1 ? (currentIdx / (steps.length - 1)) * 100 : 0}%` }}
+            />
             {steps.map((s, i) => (
               <div key={s.id} className="relative group flex flex-col items-center">
                 <div className={`relative z-10 w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center transition-all shadow-lg ${i <= currentIdx ? 'bg-emerald-500 text-white scale-110' : 'bg-white text-gray-300'}`}>
@@ -191,8 +208,8 @@ const TrackingView: React.FC = () => {
 
             {request?.worker_name && (
               <div className="flex items-center gap-4 pt-6 border-t border-gray-100">
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-lg md:text-xl shadow-sm border border-gray-100">
-                  🛠️
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl flex items-center justify-center text-gray-700 shadow-sm border border-gray-100">
+                  <HugeiconsIcon icon={Wrench01Icon} size={28} strokeWidth={1.5} className="md:w-8 md:h-8" />
                 </div>
                 <div>
                   <p className="font-black text-gray-900 text-xs md:text-sm tracking-tight">{request.worker_name}</p>

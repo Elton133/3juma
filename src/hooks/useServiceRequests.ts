@@ -114,12 +114,17 @@ export function useServiceRequests(userId?: string) {
 
       if (err) throw err;
 
-      const formatted = (data || []).map(req => ({
+      const formatted: ServiceRequest[] = (data || []).map((req: Record<string, unknown> & {
+        customer?: { full_name?: string; phone?: string } | null;
+        guest_name?: string | null;
+        guest_phone?: string | null;
+        worker?: { full_name?: string } | null;
+      }) => ({
         ...req,
-        customer_name: req.customer?.full_name,
-        customer_phone: req.customer?.phone,
+        customer_name: req.customer?.full_name ?? req.guest_name ?? undefined,
+        customer_phone: req.customer?.phone || req.guest_phone || '',
         worker_name: req.worker?.full_name,
-      }));
+      })) as ServiceRequest[];
 
       setRequests(formatted);
     } catch (err: any) {
@@ -148,8 +153,8 @@ export function useServiceRequests(userId?: string) {
 
       return {
         ...data,
-        customer_name: data.customer?.full_name,
-        customer_phone: data.customer?.phone,
+        customer_name: data.customer?.full_name ?? data.guest_name ?? undefined,
+        customer_phone: data.customer?.phone || data.guest_phone || '',
         worker_name: data.worker?.full_name,
       } as ServiceRequest;
     } catch (err: any) {
@@ -159,7 +164,12 @@ export function useServiceRequests(userId?: string) {
   }, []);
 
   // ─── UPDATE STATUS ──────────────────────────────────────────
-  const updateStatus = useCallback(async (requestId: string, status: ServiceRequest['status'], additionalData: Partial<ServiceRequest> = {}) => {
+  const updateStatus = useCallback(async (
+    requestId: string,
+    status: ServiceRequest['status'],
+    additionalData: Partial<ServiceRequest> = {},
+    options?: { skipCustomerNotify?: boolean },
+  ) => {
     setLoading(true);
     setError(null);
 
@@ -169,9 +179,7 @@ export function useServiceRequests(userId?: string) {
     }
 
     try {
-      console.log(`[3juma] Updating request ${requestId} to ${status}`, additionalData);
-      
-      const updates: any = {
+      const updates: Record<string, unknown> = {
         status,
         updated_at: new Date().toISOString(),
         ...additionalData
@@ -189,35 +197,21 @@ export function useServiceRequests(userId?: string) {
         .select()
         .maybeSingle(); // Safer than .single()
 
-      if (err) {
-        console.error('[3juma] Update error:', err);
-        throw err;
-      }
-      
+      if (err) throw err;
+
       if (!data) {
-        console.warn('[3juma] Update returned no data. Check RLS policies or if the request ID exists.');
         throw new Error('Could not update request. You might not have permission or the request was not found.');
       }
 
-      console.log('[3juma] Update successful:', data);
-
-      const notifyCustomer: ServiceRequest['status'][] = [
-        'accepted',
-        'en_route',
-        'arrived',
-        'in_progress',
-        'completed',
-        'cancelled',
-        'disputed',
-      ];
-      if (notifyCustomer.includes(status)) {
+      const notifyCustomer: ServiceRequest['status'][] = ['accepted', 'en_route', 'completed', 'cancelled', 'disputed'];
+      if (!options?.skipCustomerNotify && notifyCustomer.includes(status)) {
         void triggerCustomerJobUpdatePush(requestId, status);
       }
 
       return data as ServiceRequest;
-    } catch (err: any) {
-      console.error('[3juma] updateStatus failed:', err);
-      setError(err.message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
       return false;
     } finally {
       setLoading(false);

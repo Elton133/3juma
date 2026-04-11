@@ -136,7 +136,7 @@ Deno.serve(async (req) => {
       }
 
       const sent = await sendToUserIds([row.worker_id], {
-        title: "New job on 3juma",
+        title: "New job on Ejuma",
         body: `New ${row.trade} booking — open your dashboard to respond.`,
         url: "/worker/dashboard",
       });

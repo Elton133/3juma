@@ -8,6 +8,23 @@ declare let self: ServiceWorkerGlobalScope & {
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
+function resolveOpenUrl(raw: string | undefined, origin: string): string {
+  if (!raw?.trim()) return `${origin}/`;
+  const t = raw.trim();
+  try {
+    if (t.startsWith('http://') || t.startsWith('https://')) {
+      const u = new URL(t);
+      const base = new URL(origin);
+      if (u.origin === base.origin) return u.href;
+      return `${origin}${u.pathname}${u.search}${u.hash}`;
+    }
+    const path = t.startsWith('/') ? t : `/${t}`;
+    return new URL(path, origin).href;
+  } catch {
+    return `${origin}/`;
+  }
+}
+
 self.addEventListener('install', (event: ExtendableEvent) => {
   const p = self.skipWaiting();
   event.waitUntil(p instanceof Promise ? p : Promise.resolve());
@@ -22,7 +39,7 @@ self.addEventListener('message', (event) => {
 });
 
 self.addEventListener('push', (event: PushEvent) => {
-  let title = '3juma';
+  let title = 'Ejuma';
   let body = 'You have a new update';
   let openUrl = '/';
 
@@ -38,31 +55,44 @@ self.addEventListener('push', (event: PushEvent) => {
     if (text) body = text;
   }
 
+  const href = resolveOpenUrl(openUrl, self.location.origin);
+
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      data: { url: openUrl },
-    })
+      data: { url: href },
+    }),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const data = event.notification.data as { url?: string } | undefined;
-  const path = data?.url && data.url.startsWith('/') ? data.url : '/';
-  const url = new URL(path, self.location.origin).href;
+  const raw = (event.notification.data as { url?: string } | undefined)?.url;
+  const openUrl = resolveOpenUrl(raw, self.location.origin);
 
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clientList) => {
       for (const c of clientList) {
         if (c.url.startsWith(self.location.origin) && 'focus' in c) {
-          void (c as WindowClient).focus();
+          const wc = c as WindowClient;
+          await wc.focus();
+          type NavigateClient = WindowClient & { navigate?: (url: string) => Promise<WindowClient | null> };
+          const nav = (wc as NavigateClient).navigate;
+          if (typeof nav === 'function') {
+            try {
+              await nav.call(wc, openUrl);
+              return;
+            } catch {
+              /* fall through to message + openWindow */
+            }
+          }
+          wc.postMessage({ type: 'NAVIGATE_TO', url: openUrl });
           return;
         }
       }
-      return self.clients.openWindow(url);
-    })
+      await self.clients.openWindow(openUrl);
+    }),
   );
 });

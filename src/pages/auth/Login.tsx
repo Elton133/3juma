@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getPostLoginPath } from '@/lib/postLoginRedirect';
+import { ROUTES } from '@/lib/routes';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -67,7 +68,7 @@ const Login: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between px-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Password</label>
-              <Link to="/forgot-password" className="text-[10px] font-black text-gray-400/50 uppercase tracking-widest hover:text-gray-900 transition-colors">Forgot?</Link>
+              <Link to={ROUTES.forgotPassword} className="text-[10px] font-black text-gray-400/50 uppercase tracking-widest hover:text-gray-900 transition-colors">Forgot?</Link>
             </div>
             <div className="relative">
               <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300" />
@@ -99,7 +100,7 @@ const Login: React.FC = () => {
         </form>
 
         <p className="text-center text-xs font-bold text-gray-400">
-          New to Ejuma? <Link to="/register" className="text-gray-900 hover:underline">Create Account</Link>
+          New to Ejuma? <Link to={ROUTES.register} className="text-gray-900 hover:underline">Create Account</Link>
         </p>
       </div>
     </div>

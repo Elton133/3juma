@@ -11,7 +11,18 @@ export function useMarketplace(trade: string, centerLat: number, centerLng: numb
   const pollInterval = useRef<NodeJS.Timeout | null>(null);
 
   const fetchWorkers = useCallback(async () => {
-    if (!trade || !isSupabaseConfigured() || !supabase) return;
+    if (!trade || !centerLat || !centerLng) {
+      setWorkers([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+    if (!isSupabaseConfigured() || !supabase) {
+      setWorkers([]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
     try {
       // Fetch workers with the given trade who are verified and available
