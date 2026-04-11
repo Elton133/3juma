@@ -1,10 +1,9 @@
 /**
- * Ejuma External Email Service
- * This utility handles custom email delivery (verification, welcome, notifications)
- * bypassing Supabase default email to allow for better branding and deliverability.
+ * Optional app email helper (Resend). Auth emails (signup confirm, password reset) are
+ * sent via Supabase Auth → Send Email hook (`supabase/functions/send-auth-email`) or
+ * Resend SMTP in the Supabase dashboard — not through this client.
  *
- * Production: do not ship a Resend (or other) secret in `VITE_*` — call email APIs
- * from a server or Supabase Edge Function so API keys stay off the client.
+ * Production: do not ship a Resend secret in `VITE_*`.
  */
 
 interface EmailOptions {

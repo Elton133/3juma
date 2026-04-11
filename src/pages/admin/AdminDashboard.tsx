@@ -3,7 +3,8 @@ import { Navigation, Users, TrendingUp, MapPin, Clock, Star, Shield, Eye, Search
 import { useAuth } from '@/hooks/useAuth';
 import { generateMockWorkers } from '@/data/mock-workers';
 import { generateMockJobs } from '@/data/mock-jobs';
-import { getTradeName, getTradeIcon } from '@/lib/utils';
+import { getTradeName } from '@/lib/utils';
+import { TradeIcon } from '@/components/TradeIcon';
 import { TRADES, STATUS_CONFIG } from '@/data/constants';
 import type { Job } from '@/types/job';
 import { useAdminVerification } from '@/hooks/useAdminVerification';
@@ -108,7 +109,7 @@ const AdminDashboard: React.FC = () => {
               <div key={job.id} className="glass rounded-[2rem] p-6 border-white/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
-                    <span className="text-lg">{getTradeIcon(job.trade)}</span>
+                    <TradeIcon tradeId={job.trade} size={22} className="text-gray-900" />
                     <p className="font-black text-gray-900 truncate">{job.description}</p>
                     <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${STATUS_CONFIG[job.status as keyof typeof STATUS_CONFIG]?.color || 'bg-gray-100 text-gray-500'}`}>{STATUS_CONFIG[job.status as keyof typeof STATUS_CONFIG]?.label || job.status}</span>
                   </div>
@@ -145,7 +146,10 @@ const AdminDashboard: React.FC = () => {
                         <p className="font-black text-gray-900 truncate">{worker.name}</p>
                         {worker.verified && <Shield className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
                       </div>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{getTradeIcon(worker.trade)} {getTradeName(worker.trade)}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <TradeIcon tradeId={worker.trade} size={14} className="text-gray-400" />
+                        {getTradeName(worker.trade)}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
@@ -195,7 +199,9 @@ const AdminDashboard: React.FC = () => {
                   const percentage = jobs.length > 0 ? (count / jobs.length) * 100 : 0;
                   return (
                     <div key={trade.id} className="flex items-center gap-4">
-                      <span className="w-8 text-xl text-center">{trade.icon}</span>
+                      <span className="w-8 flex justify-center shrink-0">
+                        <TradeIcon tradeId={trade.id} size={22} className="text-gray-900" />
+                      </span>
                       <span className="w-28 text-xs font-bold text-gray-900 truncate">{trade.name}</span>
                       <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${percentage}%`, backgroundColor: trade.color }} />
@@ -302,7 +308,10 @@ const AdminDashboard: React.FC = () => {
                         <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-xl text-[10px] font-black uppercase tracking-widest border border-amber-100">Pending</span>
                       </div>
                       <div className="flex items-center gap-3 mt-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                        <span>{getTradeIcon(worker.profile.trade)} {getTradeName(worker.profile.trade)}</span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <TradeIcon tradeId={worker.profile.trade} size={14} className="text-gray-400" />
+                          {getTradeName(worker.profile.trade)}
+                        </span>
                         <span>•</span>
                         <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {worker.profile.area}</span>
                       </div>

@@ -181,7 +181,11 @@ const WorkerProfileSetup: React.FC = () => {
                 className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold appearance-none outline-none transition-all"
               >
                 <option value="">Select your trade</option>
-                {TRADES.map(t => <option key={t.id} value={t.id}>{t.icon} {t.name}</option>)}
+                {TRADES.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.iconFallback} {t.name}
+                  </option>
+                ))}
               </select>
               <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             </div>

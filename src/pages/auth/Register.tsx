@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { User, Briefcase, ChevronRight, Mail, Lock, UserCircle, ArrowLeft } from 'lucide-react';
 import { useAuth, type UserRole } from '@/hooks/useAuth';
+import { ROUTES } from '@/lib/routes';
 
 const Register: React.FC = () => {
   const { signUp } = useAuth();
@@ -61,7 +62,7 @@ const Register: React.FC = () => {
           <p className="text-gray-500 font-medium leading-relaxed mb-8">
             We've sent a verification link to <span className="text-gray-900 font-bold">{formData.email}</span>. Please confirm your email to continue.
           </p>
-          <Link to="/" className="inline-block w-full h-16 bg-gray-900 text-white rounded-2xl flex items-center justify-center font-black text-lg shadow-xl hover:scale-[1.02] transition-all">
+          <Link to={ROUTES.home} className="inline-block w-full h-16 bg-gray-900 text-white rounded-2xl flex items-center justify-center font-black text-lg shadow-xl hover:scale-[1.02] transition-all">
             Back to Home
           </Link>
         </div>
@@ -114,7 +115,7 @@ const Register: React.FC = () => {
             </div>
 
             <p className="text-center text-xs font-bold text-gray-400">
-              Already have an account? <Link to="/login" className="text-gray-900 hover:underline">Sign In</Link>
+              Already have an account? <Link to={ROUTES.login} className="text-gray-900 hover:underline">Sign In</Link>
             </p>
           </div>
         ) : (

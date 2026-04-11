@@ -8,8 +8,9 @@ export const getTradeName = (tradeId: string): string => {
   return TRADES.find((t) => t.id === tradeId)?.name || tradeId;
 };
 
-export const getTradeIcon = (tradeId: string): string => {
-  return TRADES.find((t) => t.id === tradeId)?.icon || '🔧';
+/** Emoji fallback when no SVG mapping exists (e.g. unknown trade id, or non-React contexts). */
+export const getTradeIconFallback = (tradeId: string): string => {
+  return TRADES.find((t) => t.id === tradeId)?.iconFallback || '🔧';
 };
 
 export const getTradeRateRange = (tradeId: string): string => {

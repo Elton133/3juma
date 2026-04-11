@@ -9,6 +9,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("@supabase")) return "supabase";
+          if (id.includes("@hugeicons")) return "hugeicons";
+          if (id.includes("lucide-react")) return "lucide";
+          if (id.includes("react-router")) return "react-router";
+          if (id.includes("react-dom") || id.includes("/react/")) return "react-core";
+          return "vendor";
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -24,9 +39,9 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,webmanifest}"],
       },
       manifest: {
-        name: "3juma — Ghana Skilled Trades",
-        short_name: "3juma",
-        description: "Find vetted tradespeople near you. Plumbers, electricians, masons and more.",
+        name: "Ejuma — Ghana skilled trades",
+        short_name: "Ejuma",
+        description: "Book vetted tradespeople in Ghana — plumbers, electricians, masons, carpenters, and more.",
         theme_color: "#111827",
         background_color: "#fafafa",
         display: "standalone",

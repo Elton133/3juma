@@ -1,0 +1,13 @@
+Optional: send all Auth emails through Resend without Edge Functions.
+
+Supabase Dashboard → Authentication → SMTP Settings → Enable Custom SMTP
+
+  Host: smtp.resend.com
+  Port: 465 (SSL)
+  Username: resend
+  Password: your Resend API key (re_...)
+  Sender: Your name <noreply@your-verified-domain.com>
+
+Also set Site URL + Redirect URLs to your app origin (e.g. https://app.example.com).
+
+When the Send Email hook is enabled, Supabase uses the hook instead of SMTP — use one or the other.

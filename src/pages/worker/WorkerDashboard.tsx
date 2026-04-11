@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Star, DollarSign, Zap, Clock, MapPin, Phone, Bell } from 'lucide-react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Briefcase01Icon, User03Icon } from '@hugeicons/core-free-icons';
 import { useAuth } from '@/hooks/useAuth';
-import { getTradeIcon } from '@/lib/utils';
+import { TradeIcon } from '@/components/TradeIcon';
 import { STATUS_CONFIG } from '@/data/constants';
 import { supabase } from '@/lib/supabase';
 import { isPushApiSupported, isWebPushConfigured, subscribeWebPush } from '@/lib/webPushClient';
@@ -9,6 +11,11 @@ import WorkerProfileSetup from '@/pages/worker/WorkerProfileSetup';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import type { ServiceRequest } from '@/types/payment';
+
+function dialablePhone(job: ServiceRequest) {
+  const raw = (job.customer_phone || job.guest_phone || '').trim();
+  return raw.replace(/\s/g, '');
+}
 
 const WorkerDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -64,10 +71,37 @@ const WorkerDashboard: React.FC = () => {
     }, 2000);
   };
 
-  const handleStatusUpdate = async (requestId: string, status: ServiceRequest['status']) => {
-    const result = await updateStatus(requestId, status);
-    if (result) {
-      fetchRequests('worker');
+  const handleStatusUpdate = async (
+    requestId: string,
+    status: ServiceRequest['status'],
+    opts?: { skipCustomerNotify?: boolean },
+  ) => {
+    const result = await updateStatus(requestId, status, {}, opts);
+    if (result) fetchRequests('worker');
+  };
+
+  /** One tap for the worker: advance through internal steps without extra customer pushes. */
+  const handleMarkJobComplete = async (job: ServiceRequest) => {
+    const id = job.id;
+    if (job.status === 'en_route') {
+      const r1 = await updateStatus(id, 'arrived', {}, { skipCustomerNotify: true });
+      if (!r1) return;
+      const r2 = await updateStatus(id, 'in_progress', {}, { skipCustomerNotify: true });
+      if (!r2) return;
+      const r3 = await updateStatus(id, 'completed');
+      if (r3) fetchRequests('worker');
+      return;
+    }
+    if (job.status === 'arrived') {
+      const r1 = await updateStatus(id, 'in_progress', {}, { skipCustomerNotify: true });
+      if (!r1) return;
+      const r2 = await updateStatus(id, 'completed');
+      if (r2) fetchRequests('worker');
+      return;
+    }
+    if (job.status === 'in_progress') {
+      const r = await updateStatus(id, 'completed');
+      if (r) fetchRequests('worker');
     }
   };
 
@@ -95,8 +129,13 @@ const WorkerDashboard: React.FC = () => {
         {/* Profile Header */}
         <div className="glass rounded-[2.5rem] p-8 flex flex-col md:flex-row items-center justify-between gap-6 border-white/40 shadow-lg">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-gray-900 rounded-[1.5rem] flex items-center justify-center text-4xl shadow-2xl">
-              {user?.role === 'worker' ? '🛠️' : '👤'}
+            <div className="w-20 h-20 bg-gray-900 rounded-[1.5rem] flex items-center justify-center text-white shadow-2xl">
+              <HugeiconsIcon
+                icon={user?.role === 'worker' ? Briefcase01Icon : User03Icon}
+                size={40}
+                strokeWidth={1.5}
+                className="text-white"
+              />
             </div>
             <div>
               <h1 className="text-3xl font-black text-gray-900 tracking-tighter">{user?.name || 'Worker'}</h1>
@@ -159,22 +198,37 @@ const WorkerDashboard: React.FC = () => {
             <div key={job.id} className="glass rounded-[2rem] p-6 border-white/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <span className="text-lg">{getTradeIcon(job.trade)}</span>
+                  <TradeIcon tradeId={job.trade} size={22} className="text-gray-900" />
                   <p className="font-black text-gray-900">{job.description}</p>
                 </div>
-                <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                   <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location_text}</span>
                   <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {new Date(job.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  {(job.customer_phone || job.guest_phone) && (
+                    <span className="flex items-center gap-1 text-gray-600">
+                      <Phone className="w-3 h-3" /> {job.customer_phone || job.guest_phone}
+                    </span>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button 
+              <div className="flex flex-wrap gap-2 justify-end">
+                {dialablePhone(job) && (
+                  <a
+                    href={`tel:${dialablePhone(job)}`}
+                    className="px-6 py-3 bg-gray-900 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-black transition-colors inline-flex items-center gap-2"
+                  >
+                    <Phone className="w-3.5 h-3.5" /> Call customer
+                  </a>
+                )}
+                <button
+                  type="button"
                   onClick={() => handleStatusUpdate(job.id, 'cancelled')}
                   className="px-6 py-3 border-2 border-gray-200 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:border-red-500 hover:text-red-500 transition-colors"
                 >
                   Decline
                 </button>
-                <button 
+                <button
+                  type="button"
                   onClick={() => handleStatusUpdate(job.id, 'accepted')}
                   className="px-6 py-3 bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg hover:bg-emerald-600 transition-colors"
                 >
@@ -192,22 +246,45 @@ const WorkerDashboard: React.FC = () => {
                   {STATUS_CONFIG[job.status as keyof typeof STATUS_CONFIG]?.label || job.status}
                 </span>
               </div>
-              <div className="flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+              <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
                 <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.location_text}</span>
-                <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {job.customer_phone}</span>
+                {(job.customer_phone || job.guest_phone) ? (
+                  <a href={`tel:${dialablePhone(job)}`} className="flex items-center gap-1 text-emerald-600 hover:text-emerald-800">
+                    <Phone className="w-3 h-3" /> {job.customer_phone || job.guest_phone}
+                  </a>
+                ) : (
+                  <span className="text-amber-600 normal-case">No phone on file</span>
+                )}
               </div>
-              <div className="flex gap-2 mt-4 pt-4 border-t border-gray-100">
+              <p className="text-[9px] font-bold text-gray-400 mt-2 leading-snug">
+                Customer alerts: job accepted, on the way, and completed — no extra taps needed to sync their app.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-100">
+                {dialablePhone(job) && (
+                  <a
+                    href={`tel:${dialablePhone(job)}`}
+                    className="flex-1 min-w-[140px] py-3 bg-white border-2 border-gray-900 text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest text-center hover:bg-gray-50 inline-flex items-center justify-center gap-2"
+                  >
+                    <Phone className="w-3.5 h-3.5" /> Call
+                  </a>
+                )}
                 {job.status === 'accepted' && (
-                  <button onClick={() => handleStatusUpdate(job.id, 'en_route')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Start Trip</button>
+                  <button
+                    type="button"
+                    onClick={() => handleStatusUpdate(job.id, 'en_route')}
+                    className="flex-1 min-w-[140px] py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest"
+                  >
+                    On my way
+                  </button>
                 )}
-                {job.status === 'en_route' && (
-                  <button onClick={() => handleStatusUpdate(job.id, 'arrived')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Mark Arrived</button>
-                )}
-                {job.status === 'arrived' && (
-                  <button onClick={() => handleStatusUpdate(job.id, 'in_progress')} className="flex-1 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Start Work</button>
-                )}
-                {job.status === 'in_progress' && (
-                  <button onClick={() => handleStatusUpdate(job.id, 'completed')} className="flex-1 py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Mark Completed</button>
+                {['en_route', 'arrived', 'in_progress'].includes(job.status) && (
+                  <button
+                    type="button"
+                    onClick={() => void handleMarkJobComplete(job)}
+                    className="flex-1 min-w-[160px] py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg hover:bg-emerald-600"
+                  >
+                    Mark job complete
+                  </button>
                 )}
               </div>
             </div>

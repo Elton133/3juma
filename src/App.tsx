@@ -1,4 +1,4 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider } from '@/hooks/useAuth';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -8,10 +8,13 @@ import InstallAppModal from '@/components/InstallAppModal';
 import LandingPage from '@/pages/customer/LandingPage';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
+import ForgotPassword from '@/pages/auth/ForgotPassword';
+import ResetPassword from '@/pages/auth/ResetPassword';
 import WorkerLogin from '@/pages/worker/WorkerLogin';
 import AdminLogin from '@/pages/admin/AdminLogin';
 import { ROUTES } from '@/lib/routes';
 import { getPostLoginPath } from '@/lib/postLoginRedirect';
+import PageSeo from '@/components/PageSeo';
 
 const MapView = lazy(() => import('@/pages/customer/MapView'));
 const BookingView = lazy(() => import('@/pages/customer/BookingView'));
@@ -24,6 +27,28 @@ const routeFallback = (
     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">Loading…</p>
   </div>
 );
+
+/** When a push notification is clicked, the SW may ask an open tab to navigate here (navigate() isn’t always available). */
+function ServiceWorkerNavigationBridge() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const onMessage = (event: MessageEvent) => {
+      if (event.data?.type !== 'NAVIGATE_TO' || typeof event.data.url !== 'string') return;
+      try {
+        const u = new URL(event.data.url);
+        if (u.origin === window.location.origin) {
+          navigate(`${u.pathname}${u.search}${u.hash}`);
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage);
+  }, [navigate]);
+  return null;
+}
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -76,6 +101,8 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <PageSeo />
+        <ServiceWorkerNavigationBridge />
         <div className="min-h-screen flex flex-col font-['Instrument_Sans'] selection:bg-gray-900 selection:text-white">
           <InstallAppModal />
           <Header />
@@ -84,6 +111,8 @@ export default function App() {
               <Routes>
                 <Route path={ROUTES.login} element={<Login />} />
                 <Route path={ROUTES.register} element={<Register />} />
+                <Route path={ROUTES.forgotPassword} element={<ForgotPassword />} />
+                <Route path={ROUTES.resetPassword} element={<ResetPassword />} />
                 <Route path="/signup" element={<Navigate to={ROUTES.register} replace />} />
                 <Route path={ROUTES.verify} element={<VerifyEmail />} />
 

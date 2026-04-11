@@ -1,6 +1,6 @@
 export interface ServiceRequest {
   id: string;
-  customer_id: string;
+  customer_id: string | null;
   worker_id: string | null;
   trade: string;
   description: string;

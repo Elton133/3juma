@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ROUTES } from '@/lib/routes';
 import { logoutOneSignal } from '@/lib/onesignal';
 import { removeAllWebPushForUser } from '@/lib/webPushClient';
 
@@ -19,6 +20,8 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, data: { full_name: string; role: UserRole }) => Promise<{ error: any }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error: any }>;
+  updatePassword: (newPassword: string) => Promise<{ error: any }>;
   logout: () => Promise<void>;
 }
 
@@ -128,8 +131,24 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           full_name: data.full_name,
           role: data.role,
         },
+        emailRedirectTo:
+          typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.verify}` : undefined,
       },
     });
+    return { error };
+  }, []);
+
+  const resetPasswordForEmail = useCallback(async (email: string) => {
+    if (!supabase) return { error: new Error('Supabase not configured') };
+    const redirectTo =
+      typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.resetPassword}` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    return { error };
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    if (!supabase) return { error: new Error('Supabase not configured') };
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
     return { error };
   }, []);
 
@@ -141,7 +160,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [user?.id]);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, loading, login, signUp, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        loading,
+        login,
+        signUp,
+        resetPasswordForEmail,
+        updatePassword,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
