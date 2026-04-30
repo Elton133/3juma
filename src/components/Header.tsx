@@ -4,7 +4,7 @@ import { Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/routes';
 
-const NAV_ITEMS = [
+const GUEST_NAV_ITEMS = [
   { path: ROUTES.home, label: 'Find Workers' },
   { path: ROUTES.workerLogin, label: 'Worker Portal' },
 ];
@@ -13,16 +13,28 @@ const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const location = useLocation();
   const { user, logout } = useAuth();
+  const navItems =
+    user?.role === 'worker'
+      ? [{ path: ROUTES.workerDashboard, label: 'Dashboard' }]
+      : user?.role === 'admin'
+        ? [{ path: ROUTES.adminDashboard, label: 'Admin' }]
+        : [{ path: ROUTES.home, label: 'Find Workers' }];
+  const logoTarget =
+    user?.role === 'worker'
+      ? ROUTES.workerDashboard
+      : user?.role === 'admin'
+        ? ROUTES.adminDashboard
+        : ROUTES.home;
 
   return (
     <header className="glass-header sticky top-0 z-50 border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to={ROUTES.home} className="flex items-center group transform active:scale-95 transition-all">
+        <Link to={logoTarget} className="flex items-center group transform active:scale-95 transition-all">
           <img src="/3juma.png" alt="Ejuma — home" className="h-10 w-auto object-contain" />
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -63,7 +75,7 @@ const Header: React.FC = () => {
 
       {mobileMenuOpen && (
         <div className="md:hidden glass absolute top-16 left-0 w-full border-b border-white/20 p-6 space-y-4 shadow-lg z-50 animate-in slide-in-from-top duration-300">
-          {NAV_ITEMS.map((item) => (
+          {(user ? navItems : GUEST_NAV_ITEMS).map((item) => (
             <Link
               key={item.path}
               to={item.path}
