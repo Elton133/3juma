@@ -14,4 +14,6 @@ export interface Worker {
   subscriptionActive: boolean;
   profilePhoto: string;
   phone: string;
+  bio?: string;
+  yearsExperience?: number;
 }

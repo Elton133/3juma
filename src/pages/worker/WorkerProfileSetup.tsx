@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Camera, Upload, X, Plus, Award, Image as ImageIcon, FileText, CheckCircle, Clock, AlertCircle, ChevronDown } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Camera, Upload, X, Plus, Award, Image as ImageIcon, FileText, CheckCircle, Clock, AlertCircle, ChevronDown, Save } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWorkerProfile } from '@/hooks/useWorkerProfile';
 import { uploadToCloudinary } from '@/lib/cloudinary';
@@ -25,6 +25,34 @@ const WorkerProfileSetup: React.FC = () => {
   const [certIssuedBy, setCertIssuedBy] = useState('');
   const [certYear, setCertYear] = useState('');
   const [showCertForm, setShowCertForm] = useState(false);
+  const [personalDraft, setPersonalDraft] = useState({
+    full_name: '',
+    phone: '',
+    trade: '',
+    area: '',
+    years_experience: '',
+    gender: '',
+    dob: '',
+    ghana_card_id: '',
+    specializations: '',
+    bio: '',
+  });
+
+  useEffect(() => {
+    if (!profile) return;
+    setPersonalDraft({
+      full_name: profile.full_name || '',
+      phone: profile.phone || '',
+      trade: profile.trade || '',
+      area: profile.area || '',
+      years_experience: profile.years_experience?.toString() || '',
+      gender: profile.gender || '',
+      dob: profile.dob || '',
+      ghana_card_id: profile.ghana_card_id || '',
+      specializations: profile.specializations?.join(', ') || '',
+      bio: profile.bio || '',
+    });
+  }, [profile]);
 
   if (loading) {
     return (
@@ -79,6 +107,24 @@ const WorkerProfileSetup: React.FC = () => {
       await addPortfolioImage(file);
     }
     if (portfolioInputRef.current) portfolioInputRef.current.value = '';
+  };
+
+  const savePersonalDetails = async () => {
+    await updateProfile({
+      full_name: personalDraft.full_name.trim() || 'Worker',
+      phone: personalDraft.phone.trim() || '',
+      trade: personalDraft.trade,
+      area: personalDraft.area,
+      years_experience: personalDraft.years_experience === '' ? 0 : parseInt(personalDraft.years_experience, 10) || 0,
+      gender: personalDraft.gender || null,
+      dob: personalDraft.dob || null,
+      ghana_card_id: personalDraft.ghana_card_id.trim() || null,
+      specializations: personalDraft.specializations
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+      bio: personalDraft.bio,
+    });
   };
 
   const statusBadge = () => {
@@ -154,8 +200,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Professional Name</label>
             <input
               type="text"
-              value={profile.full_name || ''}
-              onChange={(e) => updateProfile({ full_name: e.target.value })}
+              value={personalDraft.full_name}
+              onChange={(e) => setPersonalDraft((p) => ({ ...p, full_name: e.target.value }))}
               placeholder="e.g. John Doe Plumbing"
               className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all"
             />
@@ -165,8 +211,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Contact Number</label>
             <input
               type="tel"
-              value={profile.phone || ''}
-              onChange={(e) => updateProfile({ phone: e.target.value })}
+              value={personalDraft.phone}
+              onChange={(e) => setPersonalDraft((p) => ({ ...p, phone: e.target.value }))}
               placeholder="e.g. 054XXXXXXX"
               className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all"
             />
@@ -176,8 +222,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Trade</label>
             <div className="relative">
               <select
-                value={profile.trade}
-                onChange={(e) => updateProfile({ trade: e.target.value })}
+                value={personalDraft.trade}
+                onChange={(e) => setPersonalDraft((p) => ({ ...p, trade: e.target.value }))}
                 className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold appearance-none outline-none transition-all"
               >
                 <option value="">Select your trade</option>
@@ -195,8 +241,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Area</label>
             <div className="relative">
               <select
-                value={profile.area}
-                onChange={(e) => updateProfile({ area: e.target.value })}
+                value={personalDraft.area}
+                onChange={(e) => setPersonalDraft((p) => ({ ...p, area: e.target.value }))}
                 className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold appearance-none outline-none transition-all"
               >
                 <option value="">Select your area</option>
@@ -210,8 +256,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Years of Experience</label>
             <input
               type="number"
-              value={profile.years_experience ?? ''}
-              onChange={(e) => updateProfile({ years_experience: e.target.value === '' ? 0 : parseInt(e.target.value) })}
+              value={personalDraft.years_experience}
+              onChange={(e) => setPersonalDraft((p) => ({ ...p, years_experience: e.target.value }))}
               placeholder="e.g. 5"
               className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all"
             />
@@ -221,8 +267,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Gender</label>
             <div className="relative">
               <select
-                value={profile.gender || ''}
-                onChange={(e) => updateProfile({ gender: e.target.value || null })}
+                value={personalDraft.gender}
+                onChange={(e) => setPersonalDraft((p) => ({ ...p, gender: e.target.value }))}
                 className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold appearance-none outline-none transition-all"
               >
                 <option value="">Select gender</option>
@@ -238,8 +284,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Date of Birth</label>
             <input
               type="date"
-              value={profile.dob || ''}
-              onChange={(e) => updateProfile({ dob: e.target.value || null })}
+              value={personalDraft.dob}
+              onChange={(e) => setPersonalDraft((p) => ({ ...p, dob: e.target.value }))}
               className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all"
             />
           </div>
@@ -248,8 +294,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Ghana Card Number (ID)</label>
             <input
               type="text"
-              value={profile.ghana_card_id || ''}
-              onChange={(e) => updateProfile({ ghana_card_id: e.target.value || null })}
+              value={personalDraft.ghana_card_id}
+              onChange={(e) => setPersonalDraft((p) => ({ ...p, ghana_card_id: e.target.value }))}
               placeholder="GHA-XXXXXXXXX-X"
               className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all"
             />
@@ -259,8 +305,8 @@ const WorkerProfileSetup: React.FC = () => {
             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Specializations (Skills)</label>
             <input
               type="text"
-              value={profile.specializations?.join(', ') || ''}
-              onChange={(e) => updateProfile({ specializations: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+              value={personalDraft.specializations}
+              onChange={(e) => setPersonalDraft((p) => ({ ...p, specializations: e.target.value }))}
               placeholder="e.g. Pipe Repair, Bathroom Fitting, Solar Heating (separate with commas)"
               className="w-full h-12 px-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold outline-none transition-all"
             />
@@ -270,12 +316,20 @@ const WorkerProfileSetup: React.FC = () => {
         <div className="space-y-2">
           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">Bio / About You</label>
           <textarea
-            value={profile.bio}
-            onChange={(e) => updateProfile({ bio: e.target.value })}
+            value={personalDraft.bio}
+            onChange={(e) => setPersonalDraft((p) => ({ ...p, bio: e.target.value }))}
             placeholder="Tell potential customers about your experience, skills, and specializations..."
             className="w-full h-28 p-4 bg-gray-50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-[1.5rem] text-gray-900 font-bold transition-all outline-none resize-none"
           />
         </div>
+        <button
+          type="button"
+          onClick={() => void savePersonalDetails()}
+          disabled={saving}
+          className="w-full h-12 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors disabled:opacity-40 inline-flex items-center justify-center gap-2"
+        >
+          <Save className="w-4 h-4" /> Save Personal Details
+        </button>
       </div>
 
       {/* ─── GHANA CARD ────────────────────────────────────── */}

@@ -19,6 +19,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: any }>;
+  signInWithGoogle: (role?: UserRole) => Promise<{ error: any }>;
   signUp: (email: string, password: string, data: { full_name: string; role: UserRole }) => Promise<{ error: any }>;
   resetPasswordForEmail: (email: string) => Promise<{ error: any }>;
   updatePassword: (newPassword: string) => Promise<{ error: any }>;
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const oauthRoleKey = 'ejuma_oauth_role';
 
   const syncUser = useCallback(async (sessionUser: { id: string; email?: string; phone?: string; user_metadata?: Record<string, unknown> } | null) => {
     if (!sessionUser) {
@@ -74,6 +76,51 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       if (publicUser) {
+        const metadataName =
+          (sessionUser.user_metadata?.full_name as string | undefined) ||
+          (sessionUser.user_metadata?.name as string | undefined);
+        if ((!publicUser.full_name || publicUser.full_name === 'User') && metadataName?.trim()) {
+          const { data: updatedNameRow } = await supabase
+            .from('users')
+            .update({ full_name: metadataName.trim(), updated_at: new Date().toISOString() })
+            .eq('id', publicUser.id)
+            .select('id, full_name, role, phone')
+            .maybeSingle();
+          if (updatedNameRow) publicUser = updatedNameRow;
+        }
+
+        const pendingRole =
+          typeof window !== 'undefined'
+            ? (window.localStorage.getItem(oauthRoleKey) as UserRole | null)
+            : null;
+        if (pendingRole && (pendingRole === 'customer' || pendingRole === 'worker') && pendingRole !== publicUser.role) {
+          const { data: updatedRoleRow } = await supabase
+            .from('users')
+            .update({ role: pendingRole, updated_at: new Date().toISOString() })
+            .eq('id', publicUser.id)
+            .select('id, full_name, role, phone')
+            .maybeSingle();
+          if (updatedRoleRow) {
+            publicUser = updatedRoleRow;
+            if (pendingRole === 'worker') {
+              const { data: existingProfile } = await supabase
+                .from('worker_profiles')
+                .select('id')
+                .eq('user_id', publicUser.id)
+                .maybeSingle();
+              if (!existingProfile) {
+                await supabase.from('worker_profiles').insert({
+                  user_id: publicUser.id,
+                  trade: 'none',
+                  area: 'none',
+                  verification_status: 'none',
+                });
+              }
+            }
+          }
+          window.localStorage.removeItem(oauthRoleKey);
+        }
+
         setUser({
           id: publicUser.id,
           name: publicUser.full_name,
@@ -118,6 +165,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = useCallback(async (email: string, password: string) => {
     if (!supabase) return { error: new Error('Supabase not configured') };
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error };
+  }, []);
+
+  const signInWithGoogle = useCallback(async (role?: UserRole) => {
+    if (!supabase) return { error: new Error('Supabase not configured') };
+    if (role && typeof window !== 'undefined') {
+      window.localStorage.setItem(oauthRoleKey, role);
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo:
+          typeof window !== 'undefined' ? `${window.location.origin}${ROUTES.verify}` : undefined,
+      },
+    });
     return { error };
   }, []);
 
@@ -166,6 +228,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         isAuthenticated: !!user,
         loading,
         login,
+        signInWithGoogle,
         signUp,
         resetPasswordForEmail,
         updatePassword,

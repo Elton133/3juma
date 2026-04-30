@@ -168,6 +168,13 @@ const MapView: React.FC = () => {
                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Selected</p>
                 <p className="font-black text-gray-900">{selectedWorker.name}</p>
                 <p className="text-xs font-bold text-gray-500 mt-0.5">{selectedWorker.areaName}</p>
+                <button
+                  type="button"
+                  onClick={() => handleBook(selectedWorker)}
+                  className="mt-3 w-full py-2.5 rounded-xl bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-black transition-colors"
+                >
+                  View profile & book
+                </button>
               </div>
             )}
           </div>
