@@ -4,4 +4,4 @@ Disallow: /admin
 Disallow: /worker/dashboard
 Disallow: /tracking
 
-Sitemap: https://ejuma.com/sitemap.xml
+Sitemap: https://3juma.app/sitemap.xml

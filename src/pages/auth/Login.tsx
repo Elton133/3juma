@@ -7,7 +7,7 @@ import { ROUTES } from '@/lib/routes';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, signInWithGoogle } = useAuth();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -33,6 +33,16 @@ const Login: React.FC = () => {
     const path = await getPostLoginPath();
     navigate(path, { replace: true });
     setLoading(false);
+  };
+
+  const handleGoogle = async () => {
+    setLoading(true);
+    setError(null);
+    const { error: oauthError } = await signInWithGoogle();
+    if (oauthError) {
+      setError(oauthError.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -98,6 +108,30 @@ const Login: React.FC = () => {
             )}
           </button>
         </form>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-100" />
+          </div>
+          <div className="relative flex justify-center text-[10px] font-black uppercase tracking-widest text-gray-300">
+            <span className="bg-white px-3">or</span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void handleGoogle()}
+          disabled={loading}
+          className="w-full h-14 border-2 border-gray-200 bg-white text-gray-900 rounded-2xl font-black text-sm tracking-wide hover:border-gray-900 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.4H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.6z" />
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z" />
+            <path fill="#4CAF50" d="M24 44c5.1 0 9.8-2 13.1-5.2l-6-5.1C29 35.3 26.6 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.5 39.6 16.2 44 24 44z" />
+            <path fill="#1976D2" d="M43.6 20.4H42V20H24v8h11.3c-.8 2.5-2.4 4.6-4.7 5.7l6 5.1C39.9 35.8 44 30.4 44 24c0-1.3-.1-2.4-.4-3.6z" />
+          </svg>
+          Continue with Google
+        </button>
 
         <p className="text-center text-xs font-bold text-gray-400">
           New to Ejuma? <Link to={ROUTES.register} className="text-gray-900 hover:underline">Create Account</Link>

@@ -21,6 +21,7 @@ export function usePublicWorker(workerId: string) {
           trade,
           bio,
           profile_photo_url,
+          years_experience,
           rating_avg,
           jobs_completed,
           is_available,
@@ -53,6 +54,8 @@ export function usePublicWorker(workerId: string) {
           subscriptionActive: true,
           profilePhoto: data.profile_photo_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${data.id}`,
           phone: userRow?.phone || '',
+          bio: data.bio || '',
+          yearsExperience: data.years_experience || 0,
           lat: 0, // Not needed for detail view normally
           lng: 0,
         });

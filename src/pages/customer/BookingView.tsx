@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { X, Truck, Smartphone, CreditCard, Banknote, Loader2, CheckCircle, Edit } from 'lucide-react';
+import { X, Truck, Smartphone, CreditCard, Banknote, Loader2, CheckCircle, Edit, Phone, Star, Briefcase } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { usePublicWorker } from '@/hooks/usePublicWorker';
@@ -166,6 +166,33 @@ const BookingView: React.FC = () => {
                       {getTradeName(trade)} Specialist
                     </p>
                   </div>
+                </div>
+                <div className="mt-5 pt-5 border-t border-gray-100 space-y-2">
+                  <div className="flex flex-wrap items-center gap-3 text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    <span className="inline-flex items-center gap-1.5 text-amber-600">
+                      <Star className="w-3.5 h-3.5 fill-current" /> {worker.rating.toFixed(1)}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5" /> {worker.jobsCompleted} jobs
+                    </span>
+                    {worker.phone && (
+                      <a href={`tel:${worker.phone}`} className="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700">
+                        <Phone className="w-3.5 h-3.5" /> Call worker
+                      </a>
+                    )}
+                  </div>
+                  {worker.yearsExperience ? (
+                    <p className="text-[11px] font-bold text-gray-500">
+                      {worker.yearsExperience}+ years experience in {getTradeName(trade).toLowerCase()} work.
+                    </p>
+                  ) : null}
+                  {worker.bio ? (
+                    <p className="text-xs font-medium text-gray-600 leading-relaxed">{worker.bio}</p>
+                  ) : (
+                    <p className="text-xs font-medium text-gray-400 leading-relaxed">
+                      This worker has not added a bio yet, but ratings and job history are available above.
+                    </p>
+                  )}
                 </div>
               </div>
 

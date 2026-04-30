@@ -19,6 +19,7 @@ import PageSeo from '@/components/PageSeo';
 const MapView = lazy(() => import('@/pages/customer/MapView'));
 const BookingView = lazy(() => import('@/pages/customer/BookingView'));
 const TrackingView = lazy(() => import('@/pages/customer/TrackingView'));
+const CustomerProfile = lazy(() => import('@/pages/customer/CustomerProfile'));
 const WorkerDashboard = lazy(() => import('@/pages/worker/WorkerDashboard'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
 
@@ -120,6 +121,14 @@ export default function App() {
                 <Route path={ROUTES.search} element={<MapView />} />
                 <Route path={ROUTES.booking} element={<BookingView />} />
                 <Route path={ROUTES.tracking} element={<TrackingView />} />
+                <Route
+                  path={ROUTES.customerProfile}
+                  element={
+                    <ProtectedRoute requiredRole="customer" loginPath={ROUTES.login}>
+                      <CustomerProfile />
+                    </ProtectedRoute>
+                  }
+                />
 
                 <Route path={ROUTES.workerLogin} element={<WorkerLogin />} />
                 <Route

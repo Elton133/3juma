@@ -5,7 +5,7 @@ import { useAuth, type UserRole } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/routes';
 
 const Register: React.FC = () => {
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<UserRole | null>(null);
   
@@ -23,6 +23,16 @@ const Register: React.FC = () => {
   const handleRoleSelect = (selectedRole: UserRole) => {
     setRole(selectedRole);
     setStep(2);
+  };
+
+  const handleGoogleSignUp = async (selectedRole: UserRole) => {
+    setLoading(true);
+    setError(null);
+    const { error: oauthError } = await signInWithGoogle(selectedRole);
+    if (oauthError) {
+      setError(oauthError.message);
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,6 +121,37 @@ const Register: React.FC = () => {
                   </div>
                 </div>
                 <ChevronRight className="w-6 h-6 text-gray-200 group-hover:text-gray-900 transition-colors" />
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => void handleGoogleSignUp('customer')}
+                disabled={loading}
+                className="h-14 bg-white border-2 border-gray-200 rounded-2xl text-xs font-black tracking-wide text-gray-900 hover:border-gray-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#FFC107" d="M43.6 20.4H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.6z" />
+                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z" />
+                  <path fill="#4CAF50" d="M24 44c5.1 0 9.8-2 13.1-5.2l-6-5.1C29 35.3 26.6 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.5 39.6 16.2 44 24 44z" />
+                  <path fill="#1976D2" d="M43.6 20.4H42V20H24v8h11.3c-.8 2.5-2.4 4.6-4.7 5.7l6 5.1C39.9 35.8 44 30.4 44 24c0-1.3-.1-2.4-.4-3.6z" />
+                </svg>
+                Google as Customer
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleGoogleSignUp('worker')}
+                disabled={loading}
+                className="h-14 bg-white border-2 border-gray-200 rounded-2xl text-xs font-black tracking-wide text-gray-900 hover:border-gray-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 48 48" aria-hidden="true">
+                  <path fill="#FFC107" d="M43.6 20.4H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.6z" />
+                  <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4c-7.7 0-14.3 4.3-17.7 10.7z" />
+                  <path fill="#4CAF50" d="M24 44c5.1 0 9.8-2 13.1-5.2l-6-5.1C29 35.3 26.6 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.5 39.6 16.2 44 24 44z" />
+                  <path fill="#1976D2" d="M43.6 20.4H42V20H24v8h11.3c-.8 2.5-2.4 4.6-4.7 5.7l6 5.1C39.9 35.8 44 30.4 44 24c0-1.3-.1-2.4-.4-3.6z" />
+                </svg>
+                Google as Worker
               </button>
             </div>
 

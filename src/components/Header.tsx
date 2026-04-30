@@ -33,6 +33,16 @@ const Header: React.FC = () => {
           ))}
           {user ? (
             <div className="flex items-center gap-6 pl-6 border-l border-gray-100">
+              {user.role === 'customer' && (
+                <Link
+                  to={ROUTES.customerProfile}
+                  className={`text-[10px] font-black uppercase tracking-widest transition-all ${
+                    location.pathname === ROUTES.customerProfile ? 'text-gray-900' : 'text-gray-400 hover:text-gray-900'
+                  }`}
+                >
+                  Profile
+                </Link>
+              )}
               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-500">{user.name}</span>
               <button onClick={logout} className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-500 transition-colors">
                 <LogOut className="w-3.5 h-3.5" /> Sign Out

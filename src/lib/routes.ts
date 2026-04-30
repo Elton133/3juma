@@ -9,6 +9,7 @@ export const ROUTES = {
   search: '/search',
   booking: '/booking',
   tracking: '/tracking',
+  customerProfile: '/profile',
   workerLogin: '/worker',
   workerDashboard: '/worker/dashboard',
   adminLogin: '/admin',
