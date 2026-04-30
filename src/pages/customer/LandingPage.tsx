@@ -4,9 +4,11 @@ import { Search, MapPin, ChevronRight, Shield, CheckCircle, Star, Clock, User, B
 import { TRADES, AREAS } from '@/data/constants';
 import { TradeIcon } from '@/components/TradeIcon';
 import { ROUTES } from '@/lib/routes';
+import { useAuth } from '@/hooks/useAuth';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [selectedTrade, setSelectedTrade] = useState('');
   const [selectedAreaName, setSelectedAreaName] = useState('');
 
@@ -22,39 +24,41 @@ const LandingPage: React.FC = () => {
         Ejuma connects people with vetted tradespeople: plumbers, electricians, masons, carpenters, welders, painters, tilers, AC technicians, roofers, and
         auto mechanics. Service areas: Dawhenya, Tema, and Prampram along the Greater Accra coast.
       </p>
-      <div className="max-w-4xl mx-auto px-4 pt-10 pb-6 md:pt-14 md:pb-8">
-        <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">How do you want to use 3juma?</p>
-        <div className="grid md:grid-cols-2 gap-3 md:gap-4">
-          <button
-            type="button"
-            onClick={() => navigate(`${ROUTES.auth}?role=customer`)}
-            className="glass group rounded-[2rem] p-6 md:p-8 border-2 border-white/60 text-left hover:border-gray-900 transition-all flex items-center gap-4 md:gap-6 shadow-lg"
-          >
-            <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-500 group-hover:bg-gray-900 group-hover:text-white transition-colors shrink-0">
-              <User className="w-7 h-7 md:w-8 md:h-8" />
-            </div>
-            <div>
-              <h2 className="text-lg md:text-xl font-black text-gray-900 tracking-tight">I need a specialist</h2>
-              <p className="text-[11px] md:text-xs font-bold text-gray-400 mt-1 leading-snug">Book a vetted tradesperson — sign in with your customer account</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-900 ml-auto shrink-0 hidden sm:block" />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`${ROUTES.auth}?role=worker`)}
-            className="glass group rounded-[2rem] p-6 md:p-8 border-2 border-white/60 text-left hover:border-gray-900 transition-all flex items-center gap-4 md:gap-6 shadow-lg"
-          >
-            <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-500 group-hover:bg-gray-900 group-hover:text-white transition-colors shrink-0">
-              <Briefcase className="w-7 h-7 md:w-8 md:h-8" />
-            </div>
-            <div>
-              <h2 className="text-lg md:text-xl font-black text-gray-900 tracking-tight">I&apos;m a worker</h2>
-              <p className="text-[11px] md:text-xs font-bold text-gray-400 mt-1 leading-snug">Open your worker portal and dashboard</p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-900 ml-auto shrink-0 hidden sm:block" />
-          </button>
+      {!user && (
+        <div className="max-w-4xl mx-auto px-4 pt-10 pb-6 md:pt-14 md:pb-8">
+          <p className="text-center text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">How do you want to use 3juma?</p>
+          <div className="grid md:grid-cols-2 gap-3 md:gap-4">
+            <button
+              type="button"
+              onClick={() => navigate(`${ROUTES.auth}?role=customer`)}
+              className="glass group rounded-[2rem] p-6 md:p-8 border-2 border-white/60 text-left hover:border-gray-900 transition-all flex items-center gap-4 md:gap-6 shadow-lg"
+            >
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-500 group-hover:bg-gray-900 group-hover:text-white transition-colors shrink-0">
+                <User className="w-7 h-7 md:w-8 md:h-8" />
+              </div>
+              <div>
+                <h2 className="text-lg md:text-xl font-black text-gray-900 tracking-tight">I need a specialist</h2>
+                <p className="text-[11px] md:text-xs font-bold text-gray-400 mt-1 leading-snug">Book a vetted tradesperson — sign in with your customer account</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-900 ml-auto shrink-0 hidden sm:block" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`${ROUTES.auth}?role=worker`)}
+              className="glass group rounded-[2rem] p-6 md:p-8 border-2 border-white/60 text-left hover:border-gray-900 transition-all flex items-center gap-4 md:gap-6 shadow-lg"
+            >
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-500 group-hover:bg-gray-900 group-hover:text-white transition-colors shrink-0">
+                <Briefcase className="w-7 h-7 md:w-8 md:h-8" />
+              </div>
+              <div>
+                <h2 className="text-lg md:text-xl font-black text-gray-900 tracking-tight">I&apos;m a worker</h2>
+                <p className="text-[11px] md:text-xs font-bold text-gray-400 mt-1 leading-snug">Open your worker portal and dashboard</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-900 ml-auto shrink-0 hidden sm:block" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="relative overflow-hidden pt-4 md:pt-8 pb-24 md:pb-32">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl opacity-40">
