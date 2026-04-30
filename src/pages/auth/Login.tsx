@@ -4,6 +4,7 @@ import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getPostLoginPath } from '@/lib/postLoginRedirect';
 import { ROUTES } from '@/lib/routes';
+import { friendlyAuthError } from '@/lib/authErrors';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +26,7 @@ const Login: React.FC = () => {
     const { error: loginError } = await login(formData.email, formData.password);
 
     if (loginError) {
-      setError(loginError.message);
+      setError(friendlyAuthError(loginError.message));
       setLoading(false);
       return;
     }
@@ -40,7 +41,7 @@ const Login: React.FC = () => {
     setError(null);
     const { error: oauthError } = await signInWithGoogle();
     if (oauthError) {
-      setError(oauthError.message);
+      setError(friendlyAuthError(oauthError.message));
       setLoading(false);
     }
   };
@@ -135,6 +136,9 @@ const Login: React.FC = () => {
 
         <p className="text-center text-xs font-bold text-gray-400">
           New to Ejuma? <Link to={ROUTES.register} className="text-gray-900 hover:underline">Create Account</Link>
+        </p>
+        <p className="text-center text-[10px] font-bold text-gray-300 uppercase tracking-widest">
+          Worker? <Link to={ROUTES.workerLogin} className="text-gray-500 hover:text-gray-900">Open Worker Portal</Link>
         </p>
       </div>
     </div>

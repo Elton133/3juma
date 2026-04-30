@@ -135,7 +135,7 @@ const BookingView: React.FC = () => {
     );
   }
 
-  const isFormValid = description.trim() && (user || (guestName && guestEmail && guestPhone));
+  const isFormValid = description.trim() && (user || (guestName && guestPhone));
 
   return (
     <div className="min-h-screen bg-[#fafafa] py-12 md:py-20 px-4">
@@ -210,7 +210,7 @@ const BookingView: React.FC = () => {
                     <div className="grid md:grid-cols-2 gap-4">
                       <input 
                         type="email" 
-                        placeholder="Email Address" 
+                        placeholder="Email Address (optional)" 
                         value={guestEmail} 
                         onChange={(e) => setGuestEmail(e.target.value)}
                         className="w-full h-14 px-6 bg-gray-50/50 border-2 border-transparent focus:border-gray-900 focus:bg-white rounded-2xl text-gray-900 font-bold transition-all outline-none"

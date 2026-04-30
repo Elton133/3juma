@@ -50,8 +50,8 @@ const Header: React.FC = () => {
             </div>
           ) : (
             <div className="flex items-center gap-3 pl-6 border-l border-gray-100">
-              <Link to={ROUTES.login} className="px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 hover:bg-gray-50 rounded-xl transition-all">Sign In</Link>
-              <Link to={ROUTES.register} className="px-5 py-2 text-[10px] font-black uppercase tracking-widest bg-gray-900 text-white rounded-xl shadow-lg hover:bg-black transition-all">Join 3juma</Link>
+              <Link to={ROUTES.auth} className="px-5 py-2 text-[10px] font-black uppercase tracking-widest text-gray-900 hover:bg-gray-50 rounded-xl transition-all">Sign In</Link>
+              <Link to={ROUTES.auth} className="px-5 py-2 text-[10px] font-black uppercase tracking-widest bg-gray-900 text-white rounded-xl shadow-lg hover:bg-black transition-all">Join 3juma</Link>
             </div>
           )}
         </nav>
@@ -75,8 +75,8 @@ const Header: React.FC = () => {
           ))}
           {!user ? (
             <div className="grid grid-cols-2 gap-3 pt-4">
-              <Link to={ROUTES.login} onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-white border border-gray-100 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-gray-900">Sign In</Link>
-              <Link to={ROUTES.register} onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-gray-900 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-white shadow-xl">Join Us</Link>
+              <Link to={ROUTES.auth} onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-white border border-gray-100 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-gray-900">Sign In</Link>
+              <Link to={ROUTES.auth} onClick={() => setMobileMenuOpen(false)} className="px-5 py-4 bg-gray-900 rounded-2xl text-center font-black text-xs uppercase tracking-widest text-white shadow-xl">Join Us</Link>
             </div>
           ) : (
             <button onClick={() => { logout(); setMobileMenuOpen(false); }} className="block w-full text-left px-5 py-4 rounded-2xl bg-red-50 font-black text-xs uppercase tracking-widest text-red-600 border border-red-100 mt-4">

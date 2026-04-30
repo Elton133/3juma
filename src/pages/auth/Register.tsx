@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import { User, Briefcase, ChevronRight, Mail, Lock, UserCircle, ArrowLeft } from 'lucide-react';
 import { useAuth, type UserRole } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/routes';
+import { friendlyAuthError } from '@/lib/authErrors';
 
 const Register: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const preselectedRole = searchParams.get('role') === 'worker' ? 'worker' : searchParams.get('role') === 'customer' ? 'customer' : null;
   const { signUp, signInWithGoogle } = useAuth();
-  const [step, setStep] = useState(1);
-  const [role, setRole] = useState<UserRole | null>(null);
+  const [step, setStep] = useState(preselectedRole ? 2 : 1);
+  const [role, setRole] = useState<UserRole | null>(preselectedRole as UserRole | null);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -30,7 +34,7 @@ const Register: React.FC = () => {
     setError(null);
     const { error: oauthError } = await signInWithGoogle(selectedRole);
     if (oauthError) {
-      setError(oauthError.message);
+      setError(friendlyAuthError(oauthError.message));
       setLoading(false);
     }
   };
@@ -53,7 +57,7 @@ const Register: React.FC = () => {
     });
 
     if (signUpError) {
-      setError(signUpError.message);
+      setError(friendlyAuthError(signUpError.message));
       setLoading(false);
     } else {
       setSuccess(true);
