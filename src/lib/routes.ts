@@ -1,6 +1,7 @@
 /** Canonical client routes — use these in links and redirects to avoid drift. */
 export const ROUTES = {
   home: '/',
+  auth: '/auth',
   login: '/login',
   register: '/register',
   forgotPassword: '/forgot-password',

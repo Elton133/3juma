@@ -8,6 +8,7 @@ import InstallAppModal from '@/components/InstallAppModal';
 import LandingPage from '@/pages/customer/LandingPage';
 import Login from '@/pages/auth/Login';
 import Register from '@/pages/auth/Register';
+import AuthEntry from '@/pages/auth/AuthEntry';
 import ForgotPassword from '@/pages/auth/ForgotPassword';
 import ResetPassword from '@/pages/auth/ResetPassword';
 import WorkerLogin from '@/pages/worker/WorkerLogin';
@@ -112,6 +113,7 @@ export default function App() {
               <Routes>
                 <Route path={ROUTES.login} element={<Login />} />
                 <Route path={ROUTES.register} element={<Register />} />
+                <Route path={ROUTES.auth} element={<AuthEntry />} />
                 <Route path={ROUTES.forgotPassword} element={<ForgotPassword />} />
                 <Route path={ROUTES.resetPassword} element={<ResetPassword />} />
                 <Route path="/signup" element={<Navigate to={ROUTES.register} replace />} />

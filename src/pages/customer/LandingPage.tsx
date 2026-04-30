@@ -27,7 +27,7 @@ const LandingPage: React.FC = () => {
         <div className="grid md:grid-cols-2 gap-3 md:gap-4">
           <button
             type="button"
-            onClick={() => navigate(ROUTES.login)}
+            onClick={() => navigate(`${ROUTES.auth}?role=customer`)}
             className="glass group rounded-[2rem] p-6 md:p-8 border-2 border-white/60 text-left hover:border-gray-900 transition-all flex items-center gap-4 md:gap-6 shadow-lg"
           >
             <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-500 group-hover:bg-gray-900 group-hover:text-white transition-colors shrink-0">
@@ -41,7 +41,7 @@ const LandingPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => navigate(ROUTES.workerLogin)}
+            onClick={() => navigate(`${ROUTES.auth}?role=worker`)}
             className="glass group rounded-[2rem] p-6 md:p-8 border-2 border-white/60 text-left hover:border-gray-900 transition-all flex items-center gap-4 md:gap-6 shadow-lg"
           >
             <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-50 rounded-2xl flex items-center justify-center text-gray-500 group-hover:bg-gray-900 group-hover:text-white transition-colors shrink-0">

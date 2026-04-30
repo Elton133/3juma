@@ -118,6 +118,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               }
             }
           }
+        }
+        if (typeof window !== 'undefined') {
           window.localStorage.removeItem(oauthRoleKey);
         }
 
@@ -164,14 +166,22 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const login = useCallback(async (email: string, password: string) => {
     if (!supabase) return { error: new Error('Supabase not configured') };
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(oauthRoleKey);
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   }, []);
 
   const signInWithGoogle = useCallback(async (role?: UserRole) => {
     if (!supabase) return { error: new Error('Supabase not configured') };
-    if (role && typeof window !== 'undefined') {
-      window.localStorage.setItem(oauthRoleKey, role);
+    if (typeof window !== 'undefined') {
+      if (role) {
+        window.localStorage.setItem(oauthRoleKey, role);
+      } else {
+        // Avoid stale role from an earlier OAuth signup influencing this login.
+        window.localStorage.removeItem(oauthRoleKey);
+      }
     }
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -185,6 +195,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signUp = useCallback(async (email: string, password: string, data: { full_name: string; role: UserRole }) => {
     if (!supabase) return { error: new Error('Supabase not configured') };
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(oauthRoleKey);
+    }
     const { error } = await supabase.auth.signUp({
       email,
       password,
