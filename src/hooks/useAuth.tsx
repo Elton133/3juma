@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { ROUTES } from '@/lib/routes';
 import { logoutOneSignal } from '@/lib/onesignal';
 import { removeAllWebPushForUser } from '@/lib/webPushClient';
+import { trackEvent } from '@/lib/analytics';
 
 export type UserRole = 'customer' | 'worker' | 'admin';
 
@@ -130,6 +131,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           role: publicUser.role as UserRole,
           phone: publicUser.phone || sessionUser.phone,
         });
+        if (typeof window !== 'undefined') {
+          const trackedKey = `ejuma_signup_completed_${sessionUser.id}`;
+          if (!window.localStorage.getItem(trackedKey)) {
+            window.localStorage.setItem(trackedKey, '1');
+            void trackEvent('signup_completed', {
+              role: publicUser.role,
+              provider: (sessionUser.user_metadata?.provider as string | undefined) || 'auth',
+            });
+          }
+        }
       } else {
         if (import.meta.env.DEV) {
           console.warn('[3juma-Auth] No public.users row for auth id — signing out (avoid wrong id in app)');

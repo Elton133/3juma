@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useWorkerProfile } from '@/hooks/useWorkerProfile';
 import { uploadToCloudinary } from '@/lib/cloudinary';
 import { TRADES, AREAS } from '@/data/constants';
+import { trackEvent } from '@/lib/analytics';
 
 const WorkerProfileSetup: React.FC = () => {
   const { user } = useAuth();
@@ -40,6 +41,7 @@ const WorkerProfileSetup: React.FC = () => {
 
   useEffect(() => {
     if (!profile) return;
+    void trackEvent('profile_started', { role: 'worker' });
     setPersonalDraft({
       full_name: profile.full_name || '',
       phone: profile.phone || '',
@@ -541,7 +543,11 @@ const WorkerProfileSetup: React.FC = () => {
                 : 'Your profile is ready for review!'}
             </p>
             <button
-              onClick={submitForVerification}
+              onClick={() => {
+                void submitForVerification().then(() => {
+                  void trackEvent('profile_completed', { role: 'worker', verification_status: 'pending' });
+                });
+              }}
               disabled={!canSubmit || saving}
               className="w-full md:w-auto px-10 py-4 bg-gray-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl disabled:opacity-20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >

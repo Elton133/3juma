@@ -11,6 +11,7 @@ import WorkerProfileSetup from '@/pages/worker/WorkerProfileSetup';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import type { ServiceRequest } from '@/types/payment';
+import { trackEvent } from '@/lib/analytics';
 
 function dialablePhone(job: ServiceRequest) {
   const raw = (job.customer_phone || job.guest_phone || '').trim();
@@ -26,6 +27,15 @@ const WorkerDashboard: React.FC = () => {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [pushMessage, setPushMessage] = useState<string | null>(null);
   const [payoutLoading, setPayoutLoading] = useState(false);
+  const [onboardingLoading, setOnboardingLoading] = useState(true);
+  const [onboardingChecks, setOnboardingChecks] = useState({
+    hasPhone: false,
+    hasTrade: false,
+    hasArea: false,
+    hasGhanaFront: false,
+    hasGhanaBack: false,
+    verificationSubmitted: false,
+  });
 
   useEffect(() => {
     if (user?.id) {
@@ -34,6 +44,67 @@ const WorkerDashboard: React.FC = () => {
       return () => clearInterval(interval);
     }
   }, [user?.id, fetchRequests]);
+
+  useEffect(() => {
+    if (!supabase || !user?.id) {
+      setOnboardingLoading(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      setOnboardingLoading(true);
+      const { data: userRow } = await supabase.from('users').select('phone').eq('id', user.id).maybeSingle();
+      const { data: workerProfile } = await supabase
+        .from('worker_profiles')
+        .select('id, trade, area, verification_status')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      let hasFront = false;
+      let hasBack = false;
+      if (workerProfile?.id) {
+        const { data: docs } = await supabase
+          .from('verification_documents')
+          .select('document_type')
+          .eq('worker_id', workerProfile.id);
+        hasFront = !!docs?.some((d) => d.document_type === 'ghana_card_front');
+        hasBack = !!docs?.some((d) => d.document_type === 'ghana_card_back');
+      }
+
+      if (!cancelled) {
+        setOnboardingChecks({
+          hasPhone: !!userRow?.phone,
+          hasTrade: !!workerProfile?.trade && workerProfile.trade !== 'none',
+          hasArea: !!workerProfile?.area && workerProfile.area !== 'none',
+          hasGhanaFront: hasFront,
+          hasGhanaBack: hasBack,
+          verificationSubmitted:
+            workerProfile?.verification_status === 'pending' || workerProfile?.verification_status === 'approved',
+        });
+        setOnboardingLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, requests.length]);
+
+  const onboardingItems = [
+    { label: 'Contact number', done: onboardingChecks.hasPhone },
+    { label: 'Trade selected', done: onboardingChecks.hasTrade },
+    { label: 'Area selected', done: onboardingChecks.hasArea },
+    { label: 'Ghana card (front)', done: onboardingChecks.hasGhanaFront },
+    { label: 'Ghana card (back)', done: onboardingChecks.hasGhanaBack },
+    { label: 'Verification submitted', done: onboardingChecks.verificationSubmitted },
+  ];
+  const completedOnboarding = onboardingItems.filter((i) => i.done).length;
+  const profileLocked = !onboardingLoading && completedOnboarding < onboardingItems.length;
+
+  useEffect(() => {
+    if (profileLocked && activeTab !== 'profile') {
+      setActiveTab('profile');
+    }
+  }, [profileLocked, activeTab]);
 
   const handleEnableNotifications = async () => {
     setPushMessage(null);
@@ -77,7 +148,11 @@ const WorkerDashboard: React.FC = () => {
     opts?: { skipCustomerNotify?: boolean },
   ) => {
     const result = await updateStatus(requestId, status, {}, opts);
-    if (result) fetchRequests('worker');
+    if (result) {
+      if (status === 'accepted') void trackEvent('worker_accepted', { service_request_id: requestId });
+      if (status === 'completed') void trackEvent('worker_completed_job', { service_request_id: requestId });
+      fetchRequests('worker');
+    }
   };
 
   /** One tap for the worker: advance through internal steps without extra customer pushes. */
@@ -89,19 +164,28 @@ const WorkerDashboard: React.FC = () => {
       const r2 = await updateStatus(id, 'in_progress', {}, { skipCustomerNotify: true });
       if (!r2) return;
       const r3 = await updateStatus(id, 'completed');
-      if (r3) fetchRequests('worker');
+      if (r3) {
+        void trackEvent('worker_completed_job', { service_request_id: id });
+        fetchRequests('worker');
+      }
       return;
     }
     if (job.status === 'arrived') {
       const r1 = await updateStatus(id, 'in_progress', {}, { skipCustomerNotify: true });
       if (!r1) return;
       const r2 = await updateStatus(id, 'completed');
-      if (r2) fetchRequests('worker');
+      if (r2) {
+        void trackEvent('worker_completed_job', { service_request_id: id });
+        fetchRequests('worker');
+      }
       return;
     }
     if (job.status === 'in_progress') {
       const r = await updateStatus(id, 'completed');
-      if (r) fetchRequests('worker');
+      if (r) {
+        void trackEvent('worker_completed_job', { service_request_id: id });
+        fetchRequests('worker');
+      }
     }
   };
 
@@ -166,26 +250,62 @@ const WorkerDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { l: 'Jobs Done', v: stats.jobsDone.toString(), Icon: Briefcase },
-            { l: 'Rating', v: stats.rating.toFixed(1), Icon: Star },
-            { l: 'Wallet', v: `₵${stats.walletBalance}`, Icon: DollarSign },
-            { l: 'Rank', v: stats.rank, Icon: Zap },
-          ].map((s, idx) => (
-            <div key={idx} className="glass rounded-[2rem] p-6 text-center border-white/40 hover:scale-105 transition-transform">
-              <s.Icon className="w-5 h-5 mx-auto mb-3 text-gray-300" />
-              <p className="text-2xl font-black text-gray-900 tracking-tighter">{s.v}</p>
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{s.l}</p>
+        {/* Worker onboarding */}
+        {profileLocked && (
+          <div className="glass rounded-[2rem] p-6 border border-amber-100 bg-amber-50/70">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Complete your profile to receive jobs</p>
+                <p className="text-sm font-bold text-amber-900 mt-2">
+                  Progress: {completedOnboarding}/{onboardingItems.length} steps done
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveTab('profile')}
+                className="px-5 py-3 bg-amber-700 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-amber-800 transition-colors"
+              >
+                Continue profile
+              </button>
             </div>
-          ))}
-        </div>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+              {onboardingItems.map((item) => (
+                <div key={item.label} className={`rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-widest ${item.done ? 'bg-emerald-100 text-emerald-700' : 'bg-white text-amber-700 border border-amber-200'}`}>
+                  {item.done ? '✓ ' : '○ '}
+                  {item.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stats */}
+        {!profileLocked && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { l: 'Jobs Done', v: stats.jobsDone.toString(), Icon: Briefcase },
+              { l: 'Rating', v: stats.rating.toFixed(1), Icon: Star },
+              { l: 'Wallet', v: `₵${stats.walletBalance}`, Icon: DollarSign },
+              { l: 'Rank', v: stats.rank, Icon: Zap },
+            ].map((s, idx) => (
+              <div key={idx} className="glass rounded-[2rem] p-6 text-center border-white/40 hover:scale-105 transition-transform">
+                <s.Icon className="w-5 h-5 mx-auto mb-3 text-gray-300" />
+                <p className="text-2xl font-black text-gray-900 tracking-tighter">{s.v}</p>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{s.l}</p>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-2 overflow-x-auto pb-2">
           {tabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-gray-900 text-white shadow-lg' : 'bg-white text-gray-400 hover:text-gray-900'}`}>
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              disabled={profileLocked && tab.id !== 'profile'}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-gray-900 text-white shadow-lg' : 'bg-white text-gray-400 hover:text-gray-900'} disabled:opacity-40 disabled:cursor-not-allowed`}
+            >
               {tab.label}
               {tab.count !== null && <span className={`px-2 py-0.5 rounded-lg text-[10px] ${activeTab === tab.id ? 'bg-white/20' : 'bg-gray-100'}`}>{tab.count}</span>}
             </button>

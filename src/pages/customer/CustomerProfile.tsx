@@ -4,6 +4,7 @@ import { Loader2, Save, UserCircle, Phone, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { ROUTES } from '@/lib/routes';
+import { trackEvent } from '@/lib/analytics';
 
 const CustomerProfile: React.FC = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const CustomerProfile: React.FC = () => {
     }
     let cancelled = false;
     void (async () => {
+      void trackEvent('profile_started', { role: 'customer' });
       const { data } = await supabase.from('users').select('full_name, phone').eq('id', user.id).maybeSingle();
       if (!cancelled) {
         setFullName(data?.full_name || user.name || '');
@@ -50,6 +52,7 @@ const CustomerProfile: React.FC = () => {
       setMsg(error.message);
       return;
     }
+    void trackEvent('profile_completed', { role: 'customer', has_phone: !!phone.trim() });
     setMsg('Profile updated.');
     setTimeout(() => navigate(ROUTES.home), 700);
   };

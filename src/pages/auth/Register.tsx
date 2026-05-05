@@ -5,6 +5,7 @@ import { User, Briefcase, ChevronRight, Mail, Lock, UserCircle, ArrowLeft } from
 import { useAuth, type UserRole } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/routes';
 import { friendlyAuthError } from '@/lib/authErrors';
+import { trackEvent } from '@/lib/analytics';
 
 const Register: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -32,6 +33,7 @@ const Register: React.FC = () => {
   const handleGoogleSignUp = async (selectedRole: UserRole) => {
     setLoading(true);
     setError(null);
+    void trackEvent('signup_started', { role: selectedRole, provider: 'google' });
     const { error: oauthError } = await signInWithGoogle(selectedRole);
     if (oauthError) {
       setError(friendlyAuthError(oauthError.message));
@@ -50,6 +52,7 @@ const Register: React.FC = () => {
 
     setLoading(true);
     setError(null);
+    void trackEvent('signup_started', { role, provider: 'email' });
 
     const { error: signUpError } = await signUp(formData.email, formData.password, {
       full_name: formData.fullName,
@@ -60,6 +63,7 @@ const Register: React.FC = () => {
       setError(friendlyAuthError(signUpError.message));
       setLoading(false);
     } else {
+      void trackEvent('signup_completed', { role, provider: 'email' });
       setSuccess(true);
       setLoading(false);
     }
