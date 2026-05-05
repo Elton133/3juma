@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Navigation, Users, TrendingUp, MapPin, Clock, Star, Shield, Eye, Search, CheckCircle, AlertCircle, Award, Image as ImageIcon, Bell, Send, Phone, RefreshCw } from 'lucide-react';
+import { Navigation, Users, TrendingUp, MapPin, Clock, Star, Shield, Eye, Search, CheckCircle, AlertCircle, Award, Image as ImageIcon, Bell, Send, Phone, RefreshCw, Mail } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { getTradeName } from '@/lib/utils';
 import { TradeIcon } from '@/components/TradeIcon';
@@ -7,6 +7,7 @@ import { TRADES, STATUS_CONFIG } from '@/data/constants';
 import type { Worker } from '@/types/worker';
 import { useAdminVerification } from '@/hooks/useAdminVerification';
 import { triggerMarketingPush } from '@/lib/appPushTriggers';
+import { sendEmailBroadcast, type EmailAudience } from '@/lib/emailBroadcast';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 type AdminJob = {
@@ -40,7 +41,7 @@ type AnalyticsRow = {
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'jobs' | 'workers' | 'analytics' | 'leads' | 'verification' | 'push'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'workers' | 'analytics' | 'leads' | 'verification' | 'email' | 'push'>('jobs');
   const { pendingWorkers, processing, approveWorker, rejectWorker } = useAdminVerification();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNotes, setRejectNotes] = useState('');
@@ -58,6 +59,13 @@ const AdminDashboard: React.FC = () => {
   const [pushUrl, setPushUrl] = useState('/');
   const [pushBusy, setPushBusy] = useState(false);
   const [pushFeedback, setPushFeedback] = useState<{ ok: boolean; text: string } | null>(null);
+  const [emailAudience, setEmailAudience] = useState<EmailAudience>('all');
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [emailCtaLabel, setEmailCtaLabel] = useState('Open 3juma');
+  const [emailCtaUrl, setEmailCtaUrl] = useState('/');
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
   const fetchLiveData = useCallback(async () => {
     if (!isSupabaseConfigured() || !supabase) {
@@ -168,6 +176,7 @@ const AdminDashboard: React.FC = () => {
     { id: 'leads' as const, label: 'Leads', count: leads.filter((lead) => lead.status === 'new').length || null },
     { id: 'verification' as const, label: 'Verification', count: pendingWorkers.length || null },
     { id: 'analytics' as const, label: 'Analytics', count: null },
+    { id: 'email' as const, label: 'Email', count: null },
     { id: 'push' as const, label: 'Push', count: null },
   ];
 
@@ -404,6 +413,109 @@ const AdminDashboard: React.FC = () => {
                   </a>
                 </div>
               ))
+            )}
+          </div>
+        )}
+
+        {activeTab === 'email' && (
+          <div className="glass rounded-[2.5rem] p-8 md:p-10 border-white/40 space-y-6 max-w-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center">
+                <Mail className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-gray-900 tracking-tight">Email broadcast</h2>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">
+                  Admin only — sends through Resend
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Use this for onboarding nudges, service announcements, and profile reminders. Keep broadcasts rare and useful so users do not start ignoring 3juma emails.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Audience</label>
+                <select
+                  value={emailAudience}
+                  onChange={(e) => setEmailAudience(e.target.value as EmailAudience)}
+                  className="w-full h-12 px-4 rounded-2xl border border-gray-200 text-sm font-bold text-gray-900 bg-white"
+                >
+                  <option value="all">All users</option>
+                  <option value="customers">Customers</option>
+                  <option value="workers">Workers</option>
+                  <option value="incomplete_workers">Workers with incomplete profiles</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">CTA URL</label>
+                <input
+                  value={emailCtaUrl}
+                  onChange={(e) => setEmailCtaUrl(e.target.value)}
+                  className="w-full h-12 px-4 rounded-2xl border border-gray-200 text-sm font-bold text-gray-900"
+                  placeholder="/worker/dashboard"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Subject</label>
+              <input
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                maxLength={120}
+                className="w-full h-12 px-4 rounded-2xl border border-gray-200 text-sm font-bold text-gray-900"
+                placeholder="Finish your 3juma profile"
+              />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Message</label>
+              <textarea
+                value={emailMessage}
+                onChange={(e) => setEmailMessage(e.target.value)}
+                rows={6}
+                maxLength={3000}
+                className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-bold text-gray-900 resize-none"
+                placeholder="Write the message users should receive..."
+              />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Button text</label>
+              <input
+                value={emailCtaLabel}
+                onChange={(e) => setEmailCtaLabel(e.target.value)}
+                className="w-full h-12 px-4 rounded-2xl border border-gray-200 text-sm font-bold text-gray-900"
+                placeholder="Open 3juma"
+              />
+            </div>
+
+            <button
+              type="button"
+              disabled={emailBusy || !emailSubject.trim() || !emailMessage.trim()}
+              onClick={async () => {
+                setEmailFeedback(null);
+                setEmailBusy(true);
+                const r = await sendEmailBroadcast({
+                  audience: emailAudience,
+                  subject: emailSubject.trim(),
+                  message: emailMessage.trim(),
+                  ctaLabel: emailCtaLabel.trim() || 'Open 3juma',
+                  ctaUrl: emailCtaUrl.trim() || '/',
+                });
+                setEmailBusy(false);
+                setEmailFeedback(
+                  r.ok
+                    ? { ok: true, text: `Sent ${r.sent ?? 0} email(s) to ${r.recipients ?? 0} recipient(s).` }
+                    : { ok: false, text: r.error ?? 'Failed' },
+                );
+              }}
+              className="w-full h-14 rounded-2xl bg-gray-900 text-white text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-black transition-colors disabled:opacity-30"
+            >
+              <Send className="w-4 h-4" /> Send email broadcast
+            </button>
+            {emailFeedback && (
+              <p
+                className={`text-[10px] font-bold uppercase tracking-wider ${emailFeedback.ok ? 'text-emerald-700' : 'text-red-600'}`}
+              >
+                {emailFeedback.text}
+              </p>
             )}
           </div>
         )}
