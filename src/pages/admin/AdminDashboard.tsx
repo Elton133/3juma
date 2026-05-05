@@ -1,25 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { Navigation, Users, TrendingUp, MapPin, Clock, Star, Shield, Eye, Search, CheckCircle, AlertCircle, Award, Image as ImageIcon, Bell, Send } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Navigation, Users, TrendingUp, MapPin, Clock, Star, Shield, Eye, Search, CheckCircle, AlertCircle, Award, Image as ImageIcon, Bell, Send, Phone, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { generateMockWorkers } from '@/data/mock-workers';
-import { generateMockJobs } from '@/data/mock-jobs';
 import { getTradeName } from '@/lib/utils';
 import { TradeIcon } from '@/components/TradeIcon';
 import { TRADES, STATUS_CONFIG } from '@/data/constants';
-import type { Job } from '@/types/job';
+import type { Worker } from '@/types/worker';
 import { useAdminVerification } from '@/hooks/useAdminVerification';
 import { triggerMarketingPush } from '@/lib/appPushTriggers';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
-const allWorkers = generateMockWorkers();
+type AdminJob = {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  workerName: string;
+  trade: string;
+  description: string;
+  locationText: string;
+  status: string;
+  createdAt: Date;
+  amount: number;
+};
+
+type Lead = {
+  id: string;
+  name: string | null;
+  phone: string;
+  trade: string | null;
+  area: string | null;
+  note: string | null;
+  status: string;
+  created_at: string;
+};
+
+type AnalyticsRow = {
+  event_name: string;
+  created_at: string;
+};
 
 const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'jobs' | 'workers' | 'analytics' | 'verification' | 'push'>('jobs');
+  const [activeTab, setActiveTab] = useState<'jobs' | 'workers' | 'analytics' | 'leads' | 'verification' | 'push'>('jobs');
   const { pendingWorkers, processing, approveWorker, rejectWorker } = useAdminVerification();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNotes, setRejectNotes] = useState('');
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null);
-  const [jobs, setJobs] = useState<Job[]>([]);
+  const [jobs, setJobs] = useState<AdminJob[]>([]);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [analyticsEvents, setAnalyticsEvents] = useState<AnalyticsRow[]>([]);
+  const [loadingLiveData, setLoadingLiveData] = useState(true);
+  const [liveDataError, setLiveDataError] = useState<string | null>(null);
   const [jobFilter, setJobFilter] = useState<string>('all');
   const [workerSearch, setWorkerSearch] = useState('');
   const [pushTitle, setPushTitle] = useState('3juma');
@@ -28,27 +59,113 @@ const AdminDashboard: React.FC = () => {
   const [pushBusy, setPushBusy] = useState(false);
   const [pushFeedback, setPushFeedback] = useState<{ ok: boolean; text: string } | null>(null);
 
-  useEffect(() => {
-    setJobs(generateMockJobs(allWorkers));
+  const fetchLiveData = useCallback(async () => {
+    if (!isSupabaseConfigured() || !supabase) {
+      setLiveDataError('Supabase is not configured, so admin live data cannot load.');
+      setLoadingLiveData(false);
+      return;
+    }
+
+    setLoadingLiveData(true);
+    setLiveDataError(null);
+
+    try {
+      const [jobsRes, workersRes, leadsRes, analyticsRes] = await Promise.all([
+        supabase
+          .from('service_requests')
+          .select(`
+            id, trade, description, location_text, status, created_at, estimated_amount, final_amount, guest_name, guest_phone,
+            customer:users!service_requests_customer_id_fkey(full_name, phone),
+            worker:users!service_requests_worker_id_fkey(full_name)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase
+          .from('worker_profiles')
+          .select('*, users!worker_profiles_user_id_fkey(full_name, phone)')
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(50),
+        supabase.from('analytics_events').select('event_name, created_at').order('created_at', { ascending: false }).limit(500),
+      ]);
+
+      if (jobsRes.error) throw jobsRes.error;
+      if (workersRes.error) throw workersRes.error;
+      if (leadsRes.error) throw leadsRes.error;
+      if (analyticsRes.error) throw analyticsRes.error;
+
+      setJobs(
+        (jobsRes.data || []).map((row: any) => ({
+          id: row.id,
+          trade: row.trade,
+          description: row.description,
+          locationText: row.location_text,
+          status: row.status,
+          createdAt: new Date(row.created_at),
+          amount: Number(row.final_amount || row.estimated_amount || 20),
+          customerName: row.customer?.full_name || row.guest_name || 'Guest customer',
+          customerPhone: row.customer?.phone || row.guest_phone || '',
+          workerName: row.worker?.full_name || 'Unassigned',
+        }))
+      );
+
+      setWorkers(
+        (workersRes.data || []).map((row: any) => ({
+          id: row.id,
+          userId: row.user_id,
+          name: row.users?.full_name || 'Unnamed worker',
+          trade: row.trade,
+          areaName: row.area,
+          lat: 0,
+          lng: 0,
+          rating: Number(row.rating_avg || 0),
+          jobsCompleted: Number(row.jobs_completed || 0),
+          verified: Boolean(row.is_verified),
+          available: Boolean(row.is_available),
+          strikes: Number(row.strikes || 0),
+          subscriptionActive: Boolean(row.subscription_active),
+          profilePhoto: row.profile_photo_url || `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(row.users?.full_name || 'Worker')}`,
+          phone: row.users?.phone || '',
+          bio: row.bio || '',
+          yearsExperience: Number(row.years_experience || 0),
+        }))
+      );
+      setLeads((leadsRes.data || []) as Lead[]);
+      setAnalyticsEvents((analyticsRes.data || []) as AnalyticsRow[]);
+    } catch (err) {
+      setLiveDataError(err instanceof Error ? err.message : 'Failed to load admin data.');
+    } finally {
+      setLoadingLiveData(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void fetchLiveData();
+  }, [fetchLiveData]);
 
   const filteredJobs = jobFilter === 'all' ? jobs : jobs.filter((j) => j.status === jobFilter);
 
   const filteredWorkers = workerSearch
-    ? allWorkers.filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || getTradeName(w.trade).toLowerCase().includes(workerSearch.toLowerCase()))
-    : allWorkers.slice(0, 20);
+    ? workers.filter((w) => w.name.toLowerCase().includes(workerSearch.toLowerCase()) || getTradeName(w.trade).toLowerCase().includes(workerSearch.toLowerCase()))
+    : workers.slice(0, 20);
 
   const stats = {
     activeJobs: jobs.filter((j) => ['pending', 'accepted', 'en_route', 'in_progress'].includes(j.status)).length,
-    onlineWorkers: allWorkers.filter((w) => w.available).length,
-    totalWorkers: allWorkers.length,
-    completedToday: jobs.filter((j) => j.status === 'completed').length,
+    onlineWorkers: workers.filter((w) => w.available).length,
+    totalWorkers: workers.length,
+    completedToday: jobs.filter((j) => j.status === 'completed' && j.createdAt.toDateString() === new Date().toDateString()).length,
     revenue: jobs.filter((j) => j.status === 'completed').reduce((sum, j) => sum + j.amount, 0),
   };
+
+  const eventCounts = analyticsEvents.reduce<Record<string, number>>((acc, event) => {
+    acc[event.event_name] = (acc[event.event_name] || 0) + 1;
+    return acc;
+  }, {});
 
   const tabs = [
     { id: 'jobs' as const, label: 'Live Dispatch', count: null },
     { id: 'workers' as const, label: 'Fleet Management', count: null },
+    { id: 'leads' as const, label: 'Leads', count: leads.filter((lead) => lead.status === 'new').length || null },
     { id: 'verification' as const, label: 'Verification', count: pendingWorkers.length || null },
     { id: 'analytics' as const, label: 'Analytics', count: null },
     { id: 'push' as const, label: 'Push', count: null },
@@ -63,10 +180,23 @@ const AdminDashboard: React.FC = () => {
             <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Command Center</h1>
             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1">Welcome, {user?.name || 'Dispatcher'}</p>
           </div>
-          <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-3">
-            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" /> Live Monitoring
-          </div>
+          <button
+            type="button"
+            onClick={() => void fetchLiveData()}
+            disabled={loadingLiveData}
+            className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-3 disabled:opacity-50"
+          >
+            <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse" />
+            {loadingLiveData ? 'Loading live data' : 'Live Monitoring'}
+            <RefreshCw className={`w-3.5 h-3.5 ${loadingLiveData ? 'animate-spin' : ''}`} />
+          </button>
         </div>
+
+        {liveDataError && (
+          <div className="rounded-2xl border border-red-100 bg-red-50 px-5 py-4 text-xs font-bold text-red-600">
+            Admin data could not load: {liveDataError}
+          </div>
+        )}
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -98,14 +228,20 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'jobs' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 overflow-x-auto pb-2">
-              {['all', 'pending', 'accepted', 'en_route', 'in_progress', 'completed', 'cancelled'].map((f) => (
+              {['all', 'pending', 'accepted', 'en_route', 'arrived', 'in_progress', 'completed', 'cancelled'].map((f) => (
                 <button key={f} onClick={() => setJobFilter(f)} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors whitespace-nowrap ${jobFilter === f ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-400 hover:text-gray-900'}`}>
                   {f === 'all' ? 'All' : STATUS_CONFIG[f as keyof typeof STATUS_CONFIG]?.label || f}
                 </button>
               ))}
             </div>
 
-            {filteredJobs.map((job) => (
+            {filteredJobs.length === 0 ? (
+              <div className="glass rounded-[2.5rem] p-12 border-white/40 text-center">
+                <Navigation className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                <p className="font-black text-gray-900 text-xl">No jobs yet</p>
+                <p className="text-xs text-gray-400 mt-2">New service requests will show here.</p>
+              </div>
+            ) : filteredJobs.map((job) => (
               <div key={job.id} className="glass rounded-[2rem] p-6 border-white/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -117,6 +253,7 @@ const AdminDashboard: React.FC = () => {
                     <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {job.locationText}</span>
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {job.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     <span className="flex items-center gap-1">Customer: {job.customerName}</span>
+                    {job.customerPhone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {job.customerPhone}</span>}
                     <span className="flex items-center gap-1">Worker: {job.workerName}</span>
                   </div>
                 </div>
@@ -137,7 +274,13 @@ const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredWorkers.map((worker) => (
+              {filteredWorkers.length === 0 ? (
+                <div className="glass rounded-[2.5rem] p-12 border-white/40 text-center md:col-span-2 lg:col-span-3">
+                  <Users className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                  <p className="font-black text-gray-900 text-xl">No workers found</p>
+                  <p className="text-xs text-gray-400 mt-2">Worker profiles from Supabase will show here.</p>
+                </div>
+              ) : filteredWorkers.map((worker) => (
                 <div key={worker.id} className="glass rounded-[2rem] p-5 border-white/40">
                   <div className="flex items-center gap-4 mb-4">
                     <img src={worker.profilePhoto} alt={worker.name} className="w-14 h-14 rounded-2xl object-cover shadow-md" />
@@ -173,16 +316,30 @@ const AdminDashboard: React.FC = () => {
         {activeTab === 'analytics' && (
           <div className="space-y-6">
             <div className="glass rounded-[2.5rem] p-10 border-white/40 text-center">
-              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Monthly Gross Volume</p>
-              <p className="text-7xl font-black text-gray-900 tracking-tighter">₵{(stats.revenue * 4).toLocaleString()}</p>
-              <p className="text-xs font-bold text-emerald-500 mt-4">+18% from last month</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Tracked Funnel Events</p>
+              <p className="text-7xl font-black text-gray-900 tracking-tighter">{analyticsEvents.length.toLocaleString()}</p>
+              <p className="text-xs font-bold text-emerald-500 mt-4">Live from analytics_events</p>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { l: 'Avg. Job Value', v: `₵${Math.round(stats.revenue / (stats.completedToday || 1))}` },
-                { l: 'Completion Rate', v: '94%' },
-                { l: 'Avg. Response', v: '18 mins' },
-                { l: 'Customer Rating', v: '4.8/5' },
+                { l: 'Signup Started', v: eventCounts.signup_started || 0 },
+                { l: 'Signup Done', v: eventCounts.signup_completed || 0 },
+                { l: 'Profile Done', v: eventCounts.profile_completed || 0 },
+                { l: 'Bookings', v: eventCounts.booking_success || 0 },
+              ].map((s, i) => (
+                <div key={i} className="glass rounded-[2rem] p-6 text-center border-white/40">
+                  <p className="text-2xl font-black text-gray-900 tracking-tighter">{s.v}</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-2">{s.l}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { l: 'Avg. Job Value', v: `₵${Math.round(stats.revenue / (jobs.filter((j) => j.status === 'completed').length || 1))}` },
+                { l: 'Lead Captures', v: eventCounts.lead_capture_submitted || leads.length },
+                { l: 'Worker Accepted', v: eventCounts.worker_accepted || 0 },
+                { l: 'Worker Completed', v: eventCounts.worker_completed_job || 0 },
               ].map((s, i) => (
                 <div key={i} className="glass rounded-[2rem] p-6 text-center border-white/40">
                   <p className="text-2xl font-black text-gray-900 tracking-tighter">{s.v}</p>
@@ -212,6 +369,42 @@ const AdminDashboard: React.FC = () => {
                 })}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'leads' && (
+          <div className="space-y-4">
+            {leads.length === 0 ? (
+              <div className="glass rounded-[2.5rem] p-12 border-white/40 text-center">
+                <Phone className="w-12 h-12 text-gray-200 mx-auto mb-4" />
+                <p className="font-black text-gray-900 text-xl">No captured leads yet</p>
+                <p className="text-xs text-gray-400 mt-2">When customers search and no worker is found, their phone requests will appear here.</p>
+              </div>
+            ) : (
+              leads.map((lead) => (
+                <div key={lead.id} className="glass rounded-[2rem] p-6 border-white/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <p className="font-black text-gray-900">{lead.name || 'Unnamed lead'}</p>
+                      <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-600 text-[10px] font-black uppercase tracking-widest">{lead.status}</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-4 text-[10px] font-bold text-gray-400 uppercase tracking-widest flex-wrap">
+                      <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {lead.phone}</span>
+                      {lead.trade && <span>{getTradeName(lead.trade)}</span>}
+                      {lead.area && <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {lead.area}</span>}
+                      <span>{new Date(lead.created_at).toLocaleString()}</span>
+                    </div>
+                    {lead.note && <p className="text-xs font-bold text-gray-500 mt-3">{lead.note}</p>}
+                  </div>
+                  <a
+                    href={`tel:${lead.phone}`}
+                    className="px-5 py-3 rounded-2xl bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest"
+                  >
+                    Call lead
+                  </a>
+                </div>
+              ))
+            )}
           </div>
         )}
 
