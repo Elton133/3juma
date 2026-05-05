@@ -33,7 +33,7 @@ export function useServiceRequests(userId?: string) {
       const paymentCompleted = paymentData?.status === 'completed';
       const isCash = method === 'cash';
       const paymentStatus =
-        paymentCompleted && !isCash ? 'paid' : isCash ? 'pending' : 'awaiting_deposit';
+        !paymentData ? 'pending' : paymentCompleted && !isCash ? 'paid' : isCash ? 'pending' : 'awaiting_deposit';
 
       const { data: request, error: reqErr } = await supabase
         .from('service_requests')
