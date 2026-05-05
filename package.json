@@ -12,6 +12,7 @@
     "supabase:login": "supabase login",
     "supabase:link": "supabase link",
     "supabase:deploy-push": "supabase functions deploy send-app-push",
+    "supabase:deploy-email-broadcast": "supabase functions deploy send-email-broadcast --no-verify-jwt",
     "supabase:deploy-auth-email": "supabase functions deploy send-auth-email --no-verify-jwt",
     "supabase:secrets": "supabase secrets",
     "workers:reminder:dry": "node scripts/send-worker-profile-reminders.mjs",
