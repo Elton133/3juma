@@ -11,6 +11,7 @@ import WorkerProfileSetup from '@/pages/worker/WorkerProfileSetup';
 import { useServiceRequests } from '@/hooks/useServiceRequests';
 import { useWorkerStats } from '@/hooks/useWorkerStats';
 import type { ServiceRequest } from '@/types/payment';
+import { trackEvent } from '@/lib/analytics';
 
 function dialablePhone(job: ServiceRequest) {
   const raw = (job.customer_phone || job.guest_phone || '').trim();
@@ -147,7 +148,11 @@ const WorkerDashboard: React.FC = () => {
     opts?: { skipCustomerNotify?: boolean },
   ) => {
     const result = await updateStatus(requestId, status, {}, opts);
-    if (result) fetchRequests('worker');
+    if (result) {
+      if (status === 'accepted') void trackEvent('worker_accepted', { service_request_id: requestId });
+      if (status === 'completed') void trackEvent('worker_completed_job', { service_request_id: requestId });
+      fetchRequests('worker');
+    }
   };
 
   /** One tap for the worker: advance through internal steps without extra customer pushes. */
@@ -159,19 +164,28 @@ const WorkerDashboard: React.FC = () => {
       const r2 = await updateStatus(id, 'in_progress', {}, { skipCustomerNotify: true });
       if (!r2) return;
       const r3 = await updateStatus(id, 'completed');
-      if (r3) fetchRequests('worker');
+      if (r3) {
+        void trackEvent('worker_completed_job', { service_request_id: id });
+        fetchRequests('worker');
+      }
       return;
     }
     if (job.status === 'arrived') {
       const r1 = await updateStatus(id, 'in_progress', {}, { skipCustomerNotify: true });
       if (!r1) return;
       const r2 = await updateStatus(id, 'completed');
-      if (r2) fetchRequests('worker');
+      if (r2) {
+        void trackEvent('worker_completed_job', { service_request_id: id });
+        fetchRequests('worker');
+      }
       return;
     }
     if (job.status === 'in_progress') {
       const r = await updateStatus(id, 'completed');
-      if (r) fetchRequests('worker');
+      if (r) {
+        void trackEvent('worker_completed_job', { service_request_id: id });
+        fetchRequests('worker');
+      }
     }
   };
 

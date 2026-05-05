@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Briefcase, User, ChevronRight } from 'lucide-react';
+import { Briefcase, User } from 'lucide-react';
 import { useAuth, type UserRole } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/routes';
 import { friendlyAuthError } from '@/lib/authErrors';
+import { trackEvent } from '@/lib/analytics';
 
 const AuthEntry: React.FC = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const AuthEntry: React.FC = () => {
   const handleGoogle = async () => {
     setLoading(true);
     setError(null);
+    void trackEvent('signup_started', { role, provider: 'google' });
     const { error: oauthError } = await signInWithGoogle(role === 'worker' ? 'worker' : undefined);
     if (oauthError) {
       setError(friendlyAuthError(oauthError.message));
@@ -29,7 +31,7 @@ const AuthEntry: React.FC = () => {
       <div className="max-w-lg w-full glass rounded-[3rem] p-8 md:p-10 border-white/40 shadow-2xl space-y-7">
         <div className="text-center">
           <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Welcome to 3juma</h1>
-          <p className="text-gray-400 font-black uppercase text-[10px] tracking-widest mt-2">One place to sign in or create account</p>
+          <p className="text-gray-400 font-black uppercase text-[10px] tracking-widest mt-2">Google-first sign in for a simpler launch</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -67,23 +69,17 @@ const AuthEntry: React.FC = () => {
             <path fill="#4CAF50" d="M24 44c5.1 0 9.8-2 13.1-5.2l-6-5.1C29 35.3 26.6 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.6 5.1C9.5 39.6 16.2 44 24 44z" />
             <path fill="#1976D2" d="M43.6 20.4H42V20H24v8h11.3c-.8 2.5-2.4 4.6-4.7 5.7l6 5.1C39.9 35.8 44 30.4 44 24c0-1.3-.1-2.4-.4-3.6z" />
           </svg>
-          Continue with Google
+          Continue as {role} with Google
         </button>
 
-        <div className="grid md:grid-cols-2 gap-3">
+        <div className="rounded-3xl bg-gray-50 border border-gray-100 p-4 text-center">
+          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email is backup only for now</p>
           <button
             type="button"
             onClick={() => navigate(role === 'worker' ? ROUTES.workerLogin : ROUTES.login)}
-            className="h-14 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg hover:bg-black transition-colors inline-flex items-center justify-center gap-2"
+            className="mt-2 text-xs font-black text-gray-900 underline decoration-2 underline-offset-4"
           >
-            Sign In with Email <ChevronRight className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`${ROUTES.register}?role=${role}`)}
-            className="h-14 bg-white border-2 border-gray-100 text-gray-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-gray-900 transition-colors inline-flex items-center justify-center gap-2"
-          >
-            Create Account
+            Use email instead
           </button>
         </div>
       </div>

@@ -7,6 +7,8 @@ import { TradeIcon } from '@/components/TradeIcon';
 import WorkerCard from '@/components/WorkerCard';
 import { useMarketplace } from '@/hooks/useMarketplace';
 import type { Worker } from '@/types/worker';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { trackEvent } from '@/lib/analytics';
 
 /**
  * Specialist search — list-first. No Google Maps API; area coords are only used for distance in cards.
@@ -20,6 +22,9 @@ const MapView: React.FC = () => {
 
   const [searchRadius, setSearchRadius] = useState(5);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+  const [leadName, setLeadName] = useState('');
+  const [leadPhone, setLeadPhone] = useState('');
+  const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'sent' | 'error'>('idle');
 
   const { workers: filteredWorkers, loading: marketplaceLoading } = useMarketplace(
     trade,
@@ -37,6 +42,29 @@ const MapView: React.FC = () => {
       lng: String(worker.lng),
     });
     navigate(`/booking?${q.toString()}`);
+  };
+
+  const handleLeadSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!leadPhone.trim()) return;
+
+    setLeadStatus('saving');
+    void trackEvent('lead_capture_submitted', { trade, area: areaName, source: 'empty_search' });
+
+    if (!isSupabaseConfigured() || !supabase) {
+      setLeadStatus('sent');
+      return;
+    }
+
+    const { error } = await supabase.from('leads').insert({
+      name: leadName.trim() || null,
+      phone: leadPhone.trim(),
+      trade,
+      area: areaName,
+      note: `No ${getTradeName(trade).toLowerCase()} found within ${searchRadius}km`,
+    });
+
+    setLeadStatus(error ? 'error' : 'sent');
   };
 
   const areaHighlights = useMemo(
@@ -103,10 +131,38 @@ const MapView: React.FC = () => {
               <div className="h-2 w-16 bg-gray-200 rounded" />
             </div>
           ) : filteredWorkers.length === 0 ? (
-            <div className="text-center py-10 md:py-20">
+            <div className="py-8 md:py-12">
               <Search className="w-10 h-10 md:w-12 md:h-12 text-gray-200 mx-auto mb-3" />
-              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No specialists in this radius yet</p>
-              <p className="text-[10px] font-bold text-gray-300 mt-2 px-4">Try a larger radius or another area.</p>
+              <p className="text-xs font-black text-gray-400 uppercase tracking-widest text-center">No specialists in this radius yet</p>
+              <p className="text-[10px] font-bold text-gray-300 mt-2 px-4 text-center">
+                Leave your number and we&apos;ll call when a trusted worker is available nearby.
+              </p>
+              <form onSubmit={handleLeadSubmit} className="mt-6 space-y-3 rounded-3xl border border-gray-100 bg-white p-4 shadow-sm">
+                <input
+                  value={leadName}
+                  onChange={(e) => setLeadName(e.target.value)}
+                  placeholder="Your name"
+                  className="w-full h-12 rounded-2xl border border-gray-100 px-4 text-sm font-bold outline-none focus:border-gray-900"
+                />
+                <input
+                  value={leadPhone}
+                  onChange={(e) => setLeadPhone(e.target.value)}
+                  placeholder="Phone number"
+                  inputMode="tel"
+                  required
+                  className="w-full h-12 rounded-2xl border border-gray-100 px-4 text-sm font-bold outline-none focus:border-gray-900"
+                />
+                <button
+                  type="submit"
+                  disabled={leadStatus === 'saving' || leadStatus === 'sent'}
+                  className="w-full h-12 rounded-2xl bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+                >
+                  {leadStatus === 'saving' ? 'Saving...' : leadStatus === 'sent' ? 'Request received' : 'Notify me'}
+                </button>
+                {leadStatus === 'error' && (
+                  <p className="text-[10px] font-bold text-red-500 text-center">Couldn&apos;t save this yet. Please call or try again.</p>
+                )}
+              </form>
             </div>
           ) : (
             filteredWorkers.map((w) => (

@@ -7,6 +7,7 @@ import { usePublicWorker } from '@/hooks/usePublicWorker';
 import { getTradeName } from '@/lib/utils';
 import { TradeIcon } from '@/components/TradeIcon';
 import { initializePaystack } from '@/lib/paystack';
+import { trackEvent } from '@/lib/analytics';
 
 const BookingView: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -35,6 +36,7 @@ const BookingView: React.FC = () => {
     if (!worker) return;
     
     setIsProcessing(true);
+    void trackEvent('booking_started', { trade, worker_id: worker.id, payment_method: paymentMethod });
     try {
       const result = await createRequest(
         {
@@ -57,6 +59,13 @@ const BookingView: React.FC = () => {
       );
 
       if (result && result.id) {
+        void trackEvent('booking_success', {
+          trade,
+          worker_id: worker.id,
+          payment_method: paymentMethod,
+          service_request_id: result.id,
+          guest: !user,
+        });
         setSuccess(true);
         setTimeout(() => navigate(`/tracking?requestId=${result.id}`), 2000);
       }
