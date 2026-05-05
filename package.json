@@ -13,7 +13,9 @@
     "supabase:link": "supabase link",
     "supabase:deploy-push": "supabase functions deploy send-app-push",
     "supabase:deploy-auth-email": "supabase functions deploy send-auth-email --no-verify-jwt",
-    "supabase:secrets": "supabase secrets"
+    "supabase:secrets": "supabase secrets",
+    "workers:reminder:dry": "node scripts/send-worker-profile-reminders.mjs",
+    "workers:reminder:send": "node scripts/send-worker-profile-reminders.mjs --send"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.1.1",
